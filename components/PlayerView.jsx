@@ -2,13 +2,12 @@ import React, {useState, useRef} from "react";
 import {View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "react-native";
 import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
 
-export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, isOpponent = false}) {
+export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, playerLife, setPlayerLife, isOpponent = false}) {
   useFonts({
     SpaceMono_400Regular,
     SpaceMono_700Bold
   });
 
-  const [playerLife, setPlayerLife] = useState(30);
   const [lifeChange, setLifeChange] = useState(null);
 
   const [didFadeIn, setDidFadeIn] = useState(false);
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
   },
   lifeChangeText: {
     position: "absolute",
-    top: 20,
+    top: 35,
     fontSize: 26,
     color: "white",
     opacity: 0.6,
@@ -182,11 +181,7 @@ const styles = StyleSheet.create({
   button: {
     // backgroundColor: "#4CAF50",
     padding: 5,
-    marginHorizontal: 5,
-    borderRadius: 5,
-    borderColor: "white",
-    borderWidth: 4,
-    borderStyle: "dotted"
+    marginHorizontal: 5
   },
   buttonText: {
     color: "white",
