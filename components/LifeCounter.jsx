@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {View, StyleSheet, Pressable, Modal, Text} from "react-native";
+import {View, StyleSheet} from "react-native";
 import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
 import PlayerView from "./PlayerView";
 import Divider from "./Divider";

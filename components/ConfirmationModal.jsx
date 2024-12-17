@@ -1,11 +1,12 @@
 import {View, StyleSheet, Pressable, Modal, Text} from "react-native";
+import {LinearGradient} from "expo-linear-gradient";
 
 export default function ConfirmationModal({visible = false, onPressYes = () => {}, onPressNo = () => {}}) {
   return (
     <Modal transparent={true} visible={visible} animationType="fade" onRequestClose={onPressNo}>
       <View style={styles.modalOverlay}>
-        <View style={styles.dialog}>
-          <Text style={styles.dialogTitle}>Are you sure you want to reset the app?</Text>
+        <LinearGradient colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]} style={styles.dialog} start={{x: 1, y: 0}} end={{x: 0, y: 1}}>
+          <Text style={styles.dialogTitle}>Are you sure you want to restart the app?</Text>
           <View style={styles.dialogActions}>
             <Pressable style={[styles.dialogButton, styles.dialogButtonYes]} onPress={onPressYes}>
               <Text style={styles.dialogButtonText}>Yes</Text>
@@ -14,7 +15,7 @@ export default function ConfirmationModal({visible = false, onPressYes = () => {
               <Text style={styles.dialogButtonText}>No</Text>
             </Pressable>
           </View>
-        </View>
+        </LinearGradient>
       </View>
     </Modal>
   );
@@ -29,21 +30,23 @@ const styles = StyleSheet.create({
   },
   dialog: {
     width: "80%",
-    backgroundColor: "#CCC",
     borderRadius: 10,
+    borderColor: "#ccc",
+    borderWidth: 2,
     padding: 20,
     alignItems: "center",
     elevation: 5 // For Android shadow
   },
   dialogTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10
-  },
-  dialogMessage: {
-    fontSize: 16,
+    fontSize: 20,
+    color: "white",
+    textShadowColor: "black",
+    textShadowOffset: {
+      width: 0,
+      height: 1
+    },
     textAlign: "center",
-    marginBottom: 20
+    marginBottom: 15
   },
   dialogActions: {
     flexDirection: "row",
@@ -66,6 +69,11 @@ const styles = StyleSheet.create({
   dialogButtonText: {
     color: "#FFF",
     fontWeight: "bold",
-    fontSize: 16
+    textShadowColor: "black",
+    textShadowOffset: {
+      width: 0,
+      height: 2
+    },
+    fontSize: 24
   }
 });
