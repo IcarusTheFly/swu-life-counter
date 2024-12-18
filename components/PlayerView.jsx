@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   lifeChangeContent: {
     alignItems: "center",
-    zIndex: 10
+    zIndex: 2
   },
   lifeChangeText: {
     position: "absolute",

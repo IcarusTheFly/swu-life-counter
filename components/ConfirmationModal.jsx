@@ -1,32 +1,39 @@
-import {View, StyleSheet, Pressable, Modal, Text} from "react-native";
+import {View, StyleSheet, Pressable, Text} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 
 export default function ConfirmationModal({visible = false, onPressYes = () => {}, onPressNo = () => {}}) {
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <Modal transparent={true} visible={visible} animationType="fade" onRequestClose={onPressNo}>
-      <View style={styles.modalOverlay}>
-        <LinearGradient colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]} style={styles.dialog} start={{x: 1, y: 0}} end={{x: 0, y: 1}}>
-          <Text style={styles.dialogTitle}>Are you sure you want to restart the app?</Text>
-          <View style={styles.dialogActions}>
-            <Pressable style={[styles.dialogButton, styles.dialogButtonYes]} onPress={onPressYes}>
-              <Text style={styles.dialogButtonText}>Yes</Text>
-            </Pressable>
-            <Pressable style={[styles.dialogButton, styles.dialogButtonNo]} onPress={onPressNo}>
-              <Text style={styles.dialogButtonText}>No</Text>
-            </Pressable>
-          </View>
-        </LinearGradient>
-      </View>
-    </Modal>
+    <View style={styles.modalOverlay}>
+      <LinearGradient colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]} style={styles.dialog} start={{x: 1, y: 0}} end={{x: 0, y: 1}}>
+        <Text style={styles.dialogTitle}>Are you sure you want to restart the app?</Text>
+        <View style={styles.dialogActions}>
+          <Pressable style={[styles.dialogButton, styles.dialogButtonYes]} onPress={onPressYes}>
+            <Text style={styles.dialogButtonText}>Yes</Text>
+          </Pressable>
+          <Pressable style={[styles.dialogButton, styles.dialogButtonNo]} onPress={onPressNo}>
+            <Text style={styles.dialogButtonText}>No</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    zIndex: 3
   },
   dialog: {
     width: "80%",
