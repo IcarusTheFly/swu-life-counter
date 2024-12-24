@@ -1,16 +1,10 @@
 import React, {useState} from "react";
 import {View, StyleSheet} from "react-native";
-import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
 import PlayerView from "./PlayerView";
 import Divider from "./Divider";
 import ConfirmationModal from "./ConfirmationModal";
 
 export default function LifeCounter() {
-  useFonts({
-    SpaceMono_400Regular,
-    SpaceMono_700Bold
-  });
-
   const player1ID = 1;
   const player2ID = 2;
   const [player1Life, setPlayer1Life] = useState(30);
@@ -34,7 +28,7 @@ export default function LifeCounter() {
         playerLife={player1Life}
         setPlayerLife={setPlayer1Life}
         claimInitiative={() => setInitiativePlayer(player1ID)}
-        backgroundImage={require("../assets/bg-gradient-opponent.png")}
+        backgroundImage={require("../assets/bg-space-opponent.png")}
         isOpponent={true}
       />
 
@@ -51,7 +45,7 @@ export default function LifeCounter() {
         playerLife={player2Life}
         setPlayerLife={setPlayer2Life}
         claimInitiative={() => setInitiativePlayer(player2ID)}
-        backgroundImage={require("../assets/bg-gradient-player.png")}
+        backgroundImage={require("../assets/bg-space-player.png")}
       />
     </View>
   );
