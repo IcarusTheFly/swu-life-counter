@@ -29,6 +29,7 @@ export default function LifeCounter() {
         setPlayerLife={setPlayer1Life}
         claimInitiative={() => setInitiativePlayer(player1ID)}
         backgroundImage={require("../assets/bg-space-opponent.png")}
+        initiativeImage={require("../assets/initiative-icon.png")}
         isOpponent={true}
       />
 
@@ -46,6 +47,7 @@ export default function LifeCounter() {
         setPlayerLife={setPlayer2Life}
         claimInitiative={() => setInitiativePlayer(player2ID)}
         backgroundImage={require("../assets/bg-space-player.png")}
+        initiativeImage={require("../assets/initiative-icon.png")}
       />
     </View>
   );

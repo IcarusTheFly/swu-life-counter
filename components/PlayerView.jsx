@@ -1,13 +1,13 @@
 import React, {useState, useRef} from "react";
 import {View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "react-native";
 import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
+import InitiativeView from "./InitiativeView";
 
-export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, playerLife, setPlayerLife, isOpponent = false}) {
+export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false}) {
   useFonts({
     SpaceMono_400Regular,
     SpaceMono_700Bold
   });
-
   const [lifeChange, setLifeChange] = useState(null);
 
   const [didFadeIn, setDidFadeIn] = useState(false);
@@ -90,9 +90,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
       <View style={styles.divider} />
 
       {/* Initiative */}
-      <Pressable style={[styles.initiativeArea, hasInitiative && styles.initiativeTaken]} onPress={() => !hasInitiative && claimInitiative()}>
-        <Text style={[styles.initiativeText, hasInitiative && styles.initiativeTaken]}>{!hasInitiative ? "CLAIM INITIATIVE" : "You have the initiative"}</Text>
-      </Pressable>
+      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} />
     </ImageBackground>
   );
 }
@@ -133,23 +131,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row"
   },
-  initiativeArea: {
-    height: "20%",
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row"
-  },
-  initiativeTaken: {
-    fontSize: 24,
-    backgroundColor: "#FFF",
-    color: "black"
-  },
-  initiativeText: {
-    fontSize: 36,
-    fontFamily: "SpaceMono_400Regular",
-    fontWeight: "bold",
-    color: "white"
-  },
   lifeText: {
     fontWeight: "bold",
     color: "white",
@@ -171,12 +152,10 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   pressedButtonContainerOpponent: {
-    backgroundColor: "#FF6347",
-    opacity: 0.5
+    backgroundColor: "#FF634766" // 40% opacity
   },
   pressedButtonContainer: {
-    backgroundColor: "#4B79A1",
-    opacity: 0.5
+    backgroundColor: "#42FF8466" // 40% opacity
   },
   button: {
     // backgroundColor: "#4CAF50",
