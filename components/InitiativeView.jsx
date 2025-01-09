@@ -2,7 +2,7 @@ import React, {useRef} from "react";
 import {View, StyleSheet, Pressable, Animated, Image} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 
-export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage}) {
+export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage, isLandscape = false}) {
   const borderShineAnim = useRef(new Animated.Value(0)).current;
   const triggerBorderAnimation = () => {
     Animated.sequence([
@@ -21,7 +21,7 @@ export default function InitiativeView({hasInitiative, claimInitiative, initiati
 
   return (
     <Pressable
-      style={[styles.initiativeArea, hasInitiative && styles.initiativeTaken]}
+      style={[styles.initiativeArea, isLandscape ? styles.initiativeAreaLandscape : styles.initiativeAreaPortrait, hasInitiative && styles.initiativeTaken]}
       onPress={() => {
         if (!hasInitiative) {
           claimInitiative();
@@ -50,7 +50,7 @@ export default function InitiativeView({hasInitiative, claimInitiative, initiati
       >
         <LinearGradient colors={["#a1a1a1", "#6e6e6e", "#a1a1a1"]} style={styles.initiativeBorder}>
           <View style={styles.initiativeIconWrapper}>
-            <Image source={initiativeImage} style={styles.initiativeIcon} />
+            <Image source={initiativeImage} style={[styles.initiativeIcon, isLandscape ? styles.initiativeIconLandscape : styles.initiativeIconPortrait]} />
           </View>
         </LinearGradient>
       </Animated.View>
@@ -60,10 +60,15 @@ export default function InitiativeView({hasInitiative, claimInitiative, initiati
 
 const styles = StyleSheet.create({
   initiativeArea: {
-    height: "20%",
     justifyContent: "center",
     alignItems: "center",
     opacity: 0.2
+  },
+  initiativeAreaPortrait: {
+    height: "20%"
+  },
+  initiativeAreaLandscape: {
+    height: "30%"
   },
   initiativeTaken: {
     opacity: 1
@@ -89,7 +94,12 @@ const styles = StyleSheet.create({
   },
   initiativeIcon: {
     width: "100%",
-    height: "100%",
+    height: "100%"
+  },
+  initiativeIconPortrait: {
     resizeMode: "cover"
+  },
+  initiativeIconLandscape: {
+    resizeMode: "center"
   }
 });

@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "reac
 import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
 import InitiativeView from "./InitiativeView";
 
-export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false}) {
+export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false, isLandscape = false}) {
   useFonts({
     SpaceMono_400Regular,
     SpaceMono_700Bold
@@ -55,7 +55,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
     <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.player, isOpponent && styles.opponent]}>
       {/* Life Change Indicator */}
       {lifeChange !== null && (
-        <View style={styles.lifeChangeContent}>
+        <View style={[styles.lifeChangeContent, isLandscape ? styles.lifeChangeContentLandscape : styles.lifeChangeContentPortrait]}>
           <Animated.Text
             style={[
               styles.lifeChangeText,
@@ -90,7 +90,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
       <View style={styles.divider} />
 
       {/* Initiative */}
-      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} />
+      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} />
     </ImageBackground>
   );
 }
@@ -107,8 +107,14 @@ const styles = StyleSheet.create({
     transform: [{rotate: "180deg"}]
   },
   lifeChangeContent: {
-    alignItems: "center",
     zIndex: 2
+  },
+  lifeChangeContentPortrait: {
+    alignItems: "center"
+  },
+  lifeChangeContentLandscape: {
+    alignItems: "flex-end",
+    marginRight: "35%"
   },
   lifeChangeText: {
     position: "absolute",

@@ -1,10 +1,12 @@
 import React, {useState} from "react";
-import {View, StyleSheet} from "react-native";
+import {View, StyleSheet, useWindowDimensions} from "react-native";
 import PlayerView from "./PlayerView";
 import Divider from "./Divider";
 import ConfirmationModal from "./ConfirmationModal";
 
 export default function LifeCounter() {
+  const {width, height} = useWindowDimensions();
+  const isLandscape = width > height;
   const player1ID = 1;
   const player2ID = 2;
   const [player1Life, setPlayer1Life] = useState(30);
@@ -31,6 +33,7 @@ export default function LifeCounter() {
         backgroundImage={require("../assets/bg-space-opponent.png")}
         initiativeImage={require("../assets/initiative-icon.png")}
         isOpponent={true}
+        isLandscape={isLandscape}
       />
 
       {/* Divider and Reset button */}
@@ -48,6 +51,7 @@ export default function LifeCounter() {
         claimInitiative={() => setInitiativePlayer(player2ID)}
         backgroundImage={require("../assets/bg-space-player.png")}
         initiativeImage={require("../assets/initiative-icon.png")}
+        isLandscape={isLandscape}
       />
     </View>
   );
