@@ -30,7 +30,7 @@ export default function LifeCounter() {
         playerLife={player1Life}
         setPlayerLife={setPlayer1Life}
         claimInitiative={() => setInitiativePlayer(player1ID)}
-        backgroundImage={require("../assets/bg-space-opponent.png")}
+        backgroundImage={isLandscape ? require("../assets/bg-space-opponent-landscape.png") : require("../assets/bg-space-opponent.png")}
         initiativeImage={require("../assets/initiative-icon.png")}
         isOpponent={true}
         isLandscape={isLandscape}
@@ -49,7 +49,7 @@ export default function LifeCounter() {
         playerLife={player2Life}
         setPlayerLife={setPlayer2Life}
         claimInitiative={() => setInitiativePlayer(player2ID)}
-        backgroundImage={require("../assets/bg-space-player.png")}
+        backgroundImage={isLandscape ? require("../assets/bg-space-player-landscape.png") : require("../assets/bg-space-player.png")}
         initiativeImage={require("../assets/initiative-icon.png")}
         isLandscape={isLandscape}
       />
