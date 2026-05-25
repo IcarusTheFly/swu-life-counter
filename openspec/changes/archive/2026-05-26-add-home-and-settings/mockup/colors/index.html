@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SWU Life Counter — color variant preview</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    background: #1b1b1f;
+    color: #e6e6e6;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    padding: 24px;
+  }
+  h1 { margin: 0 0 8px; font-size: 18px; letter-spacing: 0.04em; }
+  p.note { color: #a0a0a0; font-size: 13px; margin: 0 0 24px; max-width: 720px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 1400px;
+  }
+  .card {
+    background: #101013;
+    border: 1px solid #2a2a2e;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .card img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .card .label {
+    padding: 8px 12px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ccc;
+  }
+  section { margin-bottom: 32px; }
+  section h2 { font-size: 14px; color: #888; letter-spacing: 0.16em; text-transform: uppercase; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+  <h1>Background color variants</h1>
+  <p class="note">
+    Each card is the lines image hue-shifted to the team color and composited over
+    <code>bg_space_background.png</code>. Pipeline preserves the line shading and
+    glow via HSV rotation, then derives alpha from the source's white background.
+  </p>
+
+  <section>
+    <h2>Reference vs pipeline output (same grid so cards are equal size)</h2>
+    <div class="grid">
+      <div class="card" style="outline: 2px solid #f5b73a"><img src="../../../../../assets/bg-space-opponent.png" alt="opponent reference"/><div class="label" style="color:#f5b73a">★ Reference — bg-space-opponent.png</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_red.png" alt="red"/><div class="label">Red (pipeline)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_green.png" alt="green"/><div class="label">Green</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_blue.png" alt="blue"/><div class="label">Blue</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_yellow.png" alt="yellow"/><div class="label">Yellow</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_purple.png" alt="purple"/><div class="label">Purple</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_orange.png" alt="orange"/><div class="label">Orange</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_pink.png" alt="pink"/><div class="label">Pink</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_white.png" alt="white"/><div class="label">White</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Landscape variants (bg_complete_&lt;color&gt;_landscape.png — 4800×1080)</h2>
+    <div class="grid" style="grid-template-columns: 1fr;">
+      <div class="card" style="outline: 2px solid #f5b73a"><img src="../../../../../assets/bg-space-opponent-landscape.png" alt="opponent landscape reference"/><div class="label" style="color:#f5b73a">★ Reference — bg-space-opponent-landscape.png</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_red_landscape.png" alt="red landscape"/><div class="label">Red (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_green_landscape.png" alt="green landscape"/><div class="label">Green (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_blue_landscape.png" alt="blue landscape"/><div class="label">Blue (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_yellow_landscape.png" alt="yellow landscape"/><div class="label">Yellow (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_purple_landscape.png" alt="purple landscape"/><div class="label">Purple (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_orange_landscape.png" alt="orange landscape"/><div class="label">Orange (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_pink_landscape.png" alt="pink landscape"/><div class="label">Pink (landscape)</div></div>
+      <div class="card"><img src="../../../../../assets/bg_complete_white_landscape.png" alt="white landscape"/><div class="label">White (landscape)</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lines-only variants (bg_separated_lines_&lt;color&gt;.png — transparent BG)</h2>
+    <div class="grid">
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_red.png" alt="red lines"/><div class="label">Red lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_green.png" alt="green lines"/><div class="label">Green lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_blue.png" alt="blue lines"/><div class="label">Blue lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_yellow.png" alt="yellow lines"/><div class="label">Yellow lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_purple.png" alt="purple lines"/><div class="label">Purple lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_orange.png" alt="orange lines"/><div class="label">Orange lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_pink.png" alt="pink lines"/><div class="label">Pink lines</div></div>
+      <div class="card" style="background:#111"><img src="../../../../../assets/bg_separated_lines_white.png" alt="white lines"/><div class="label">White lines</div></div>
+    </div>
+  </section>
+</body>
+</html>

@@ -1,13 +1,13 @@
 import React, {useState, useRef} from "react";
-import {View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "react-native";
-import {useFonts, SpaceMono_400Regular, SpaceMono_700Bold} from "@expo-google-fonts/space-mono";
+import {Platform, View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "react-native";
 import InitiativeView from "./InitiativeView";
+import {canUpdateLife} from "./lifeMath";
+import {textShadow} from "../utils/textShadow";
 
-export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false, isLandscape = false}) {
-  useFonts({
-    SpaceMono_400Regular,
-    SpaceMono_700Bold
-  });
+// react-native-web has no native animated module; only request native driver on real platforms.
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
+
+export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false, isLandscape = false, teamColor, lifeMode = "down"}) {
   const [lifeChange, setLifeChange] = useState(null);
 
   const [didFadeIn, setDidFadeIn] = useState(false);
@@ -15,24 +15,26 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(-20)).current;
 
+  const pressTint = teamColor ? teamColor.press : "#FFFFFF33";
+
   const updateLife = (change) => {
-    if ((change > 0 && playerLife < 99) || (change < 0 && playerLife > -9)) {
+    if (canUpdateLife(playerLife, change, lifeMode)) {
       clearTimeout(fadeOutTimeout.current);
 
       setPlayerLife((prevLife) => prevLife + change);
-      setLifeChange(lifeChange + change);
+      setLifeChange((prev) => (prev || 0) + change);
 
       if (!didFadeIn) {
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 300,
-            useNativeDriver: true
+            useNativeDriver: USE_NATIVE_DRIVER
           }),
           Animated.timing(translateYAnim, {
             toValue: 0,
             duration: 300,
-            useNativeDriver: true
+            useNativeDriver: USE_NATIVE_DRIVER
           })
         ]).start();
         setDidFadeIn(true);
@@ -42,7 +44,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 500,
-          useNativeDriver: true
+          useNativeDriver: USE_NATIVE_DRIVER
         }).start(() => {
           setLifeChange(null);
           setDidFadeIn(false);
@@ -53,7 +55,6 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.player, isOpponent && styles.opponent]}>
-      {/* Life Change Indicator */}
       {lifeChange !== null && (
         <View style={[styles.lifeChangeContent, isLandscape ? styles.lifeChangeContentLandscape : styles.lifeChangeContentPortrait]}>
           <Animated.Text
@@ -70,9 +71,8 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
         </View>
       )}
 
-      {/* Life Points */}
       <View style={styles.lifeArea}>
-        <Pressable style={({pressed}) => [styles.buttonContainer, pressed && (isOpponent ? styles.pressedButtonContainerOpponent : styles.pressedButtonContainer)]} onPress={() => updateLife(-1)}>
+        <Pressable style={({pressed}) => [styles.buttonContainer, pressed && {backgroundColor: pressTint}]} onPress={() => updateLife(-1)}>
           <View style={styles.button}>
             <Text style={styles.buttonText}>-</Text>
           </View>
@@ -80,7 +80,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
         <View style={styles.buttonContainer}>
           <Text style={styles.lifeText}>{playerLife}</Text>
         </View>
-        <Pressable style={({pressed}) => [styles.buttonContainer, pressed && (isOpponent ? styles.pressedButtonContainerOpponent : styles.pressedButtonContainer)]} onPress={() => updateLife(1)}>
+        <Pressable style={({pressed}) => [styles.buttonContainer, pressed && {backgroundColor: pressTint}]} onPress={() => updateLife(1)}>
           <View style={styles.button}>
             <Text style={styles.buttonText}>+</Text>
           </View>
@@ -89,7 +89,6 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
 
       <View style={styles.divider} />
 
-      {/* Initiative */}
       <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} />
     </ImageBackground>
   );
@@ -103,7 +102,6 @@ const styles = StyleSheet.create({
     flexDirection: "column"
   },
   opponent: {
-    // backgroundColor: "#8B0000",
     transform: [{rotate: "180deg"}]
   },
   lifeChangeContent: {
@@ -122,13 +120,9 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: "white",
     opacity: 0.6,
-    textShadowColor: "black",
-    textShadowOffset: {
-      width: 0,
-      height: 2
-    },
-    textShadowRadius: 6,
-    textShadowOpacity: 0.1
+    // `textShadowOpacity` isn't a valid RN style prop — the intent was a faint shadow,
+    // expressed correctly by baking the opacity into the rgba color below.
+    ...textShadow({color: "rgba(0,0,0,0.1)", offset: {width: 0, height: 2}, radius: 6})
   },
   lifeArea: {
     height: "75%",
@@ -141,15 +135,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
     marginVertical: 10,
-    fontFamily: "SpaceMono_400Regular",
+    fontFamily: "FiraCode_400Regular",
     fontSize: 100,
-    textShadowColor: "black",
-    textShadowOffset: {
-      width: 0,
-      height: 2
-    },
-    textShadowRadius: 6,
-    textShadowOpacity: 0.1
+    ...textShadow({color: "rgba(0,0,0,0.1)", offset: {width: 0, height: 2}, radius: 6})
   },
   buttonContainer: {
     flex: 1,
@@ -157,29 +145,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center"
   },
-  pressedButtonContainerOpponent: {
-    backgroundColor: "#FF634766" // 40% opacity
-  },
-  pressedButtonContainer: {
-    backgroundColor: "#42FF8466" // 40% opacity
-  },
   button: {
-    // backgroundColor: "#4CAF50",
     padding: 5,
     marginHorizontal: 5
   },
   buttonText: {
     color: "white",
     fontWeight: "bold",
-    fontFamily: "SpaceMono_400Regular",
+    fontFamily: "FiraCode_400Regular",
     fontSize: 100,
-    textShadowColor: "black",
-    textShadowOffset: {
-      width: 0,
-      height: 2
-    },
-    textShadowRadius: 6,
-    textShadowOpacity: 0.1
+    ...textShadow({color: "rgba(0,0,0,0.1)", offset: {width: 0, height: 2}, radius: 6})
   },
   divider: {
     width: "100%",

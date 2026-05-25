@@ -1,31 +1,30 @@
+import React, {useCallback, useState} from "react";
+import {useFonts, FiraCode_400Regular, FiraCode_700Bold} from "@expo-google-fonts/fira-code";
 import ScreenLayout from "./components/ScreenLayout";
+import HomeScreen from "./components/HomeScreen";
+import SettingsScreen from "./components/SettingsScreen";
 import LifeCounter from "./components/LifeCounter";
-
-import React, {useState, useEffect} from "react";
-import * as Font from "expo-font";
+import {SettingsProvider} from "./context/SettingsContext";
 
 export default function App() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [fontsLoaded] = useFonts({FiraCode_400Regular, FiraCode_700Bold});
+  const [screen, setScreen] = useState("home");
 
-  useEffect(() => {
-    async function loadFonts() {
-      await Font.loadAsync({
-        FiraCode_400Regular: require("./assets/fonts/FiraCode-Regular.ttf"),
-        FiraCode_700Bold: require("./assets/fonts/FiraCode-Bold.ttf")
-      });
-      setFontsLoaded(true);
-    }
-
-    loadFonts();
-  }, []);
+  const goHome = useCallback(() => setScreen("home"), []);
+  const goGame = useCallback(() => setScreen("game"), []);
+  const goSettings = useCallback(() => setScreen("settings"), []);
 
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <ScreenLayout>
-      <LifeCounter />
-    </ScreenLayout>
+    <SettingsProvider>
+      <ScreenLayout>
+        {screen === "home" && <HomeScreen onStartGame={goGame} onOpenSettings={goSettings} />}
+        {screen === "settings" && <SettingsScreen onBack={goHome} />}
+        {screen === "game" && <LifeCounter onReturnHome={goHome} />}
+      </ScreenLayout>
+    </SettingsProvider>
   );
 }

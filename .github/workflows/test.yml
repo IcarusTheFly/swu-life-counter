@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      # Use `npm ci` when a lockfile is present (reproducible install), fall
+      # back to `npm install` otherwise. Either way we run `--ignore-scripts`
+      # so that postinstall hooks from native modules (e.g. Expo prebuild)
+      # don't try to run on a headless Linux runner without Android/iOS SDKs.
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts
+          else
+            npm install --ignore-scripts
+          fi
+
+      - name: Run tests
+        run: npm test

@@ -1,7 +1,15 @@
-import {View, StyleSheet, Pressable, Text} from "react-native";
+import React from "react";
+import {Pressable, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
+import {textShadow} from "../utils/textShadow";
 
-export default function ConfirmationModal({visible = false, onPressYes = () => {}, onPressNo = () => {}}) {
+const VARIANT_COLORS = {
+  destructive: "#8B0000",
+  primary: "#4B79A1",
+  neutral: "#555555"
+};
+
+export default function ConfirmationModal({visible = false, title = "", actions = []}) {
   if (!visible) {
     return null;
   }
@@ -9,14 +17,16 @@ export default function ConfirmationModal({visible = false, onPressYes = () => {
   return (
     <View style={styles.modalOverlay}>
       <LinearGradient colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]} style={styles.dialog} start={{x: 1, y: 0}} end={{x: 0, y: 1}}>
-        <Text style={styles.dialogTitle}>Are you sure you want to restart the app?</Text>
+        {title ? <Text style={styles.dialogTitle}>{title}</Text> : null}
         <View style={styles.dialogActions}>
-          <Pressable style={[styles.dialogButton, styles.dialogButtonYes]} onPress={onPressYes}>
-            <Text style={styles.dialogButtonText}>Yes</Text>
-          </Pressable>
-          <Pressable style={[styles.dialogButton, styles.dialogButtonNo]} onPress={onPressNo}>
-            <Text style={styles.dialogButtonText}>No</Text>
-          </Pressable>
+          {actions.map((action, idx) => {
+            const tint = VARIANT_COLORS[action.variant] || VARIANT_COLORS.neutral;
+            return (
+              <Pressable key={action.label + idx} style={[styles.dialogButton, {backgroundColor: tint}]} onPress={action.onPress} accessibilityRole="button" accessibilityLabel={action.accessibilityLabel || action.label}>
+                <Text style={styles.dialogButtonText}>{action.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </LinearGradient>
     </View>
@@ -36,51 +46,39 @@ const styles = StyleSheet.create({
     zIndex: 3
   },
   dialog: {
-    width: "80%",
+    width: "85%",
+    maxWidth: 420,
     borderRadius: 10,
     borderColor: "#ccc",
     borderWidth: 2,
     padding: 20,
     alignItems: "center",
-    elevation: 5 // For Android shadow
+    elevation: 5
   },
   dialogTitle: {
     fontSize: 20,
     color: "white",
-    textShadowColor: "black",
-    textShadowOffset: {
-      width: 0,
-      height: 1
-    },
+    ...textShadow({color: "black", offset: {width: 0, height: 1}, radius: 0}),
     textAlign: "center",
     marginBottom: 15
   },
   dialogActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%"
+    flexDirection: "column",
+    width: "100%",
+    gap: 10
   },
   dialogButton: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    borderRadius: 5,
-    alignItems: "center"
-  },
-  dialogButtonYes: {
-    backgroundColor: "#8B0000"
-  },
-  dialogButtonNo: {
-    backgroundColor: "#4B79A1"
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center"
   },
   dialogButtonText: {
     color: "#FFF",
     fontWeight: "bold",
-    textShadowColor: "black",
-    textShadowOffset: {
-      width: 0,
-      height: 2
-    },
-    fontSize: 24
+    ...textShadow({color: "black", offset: {width: 0, height: 2}, radius: 0}),
+    fontSize: 18
   }
 });

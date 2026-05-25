@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mockup",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "5733", "--directory", "openspec/changes/add-home-and-settings/mockup"],
+      "port": 5733
+    },
+    {
+      "name": "colors-preview",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "5734"],
+      "port": 5734
+    }
+  ]
+}

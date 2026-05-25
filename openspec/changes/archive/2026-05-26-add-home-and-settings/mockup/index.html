@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SWU Life Counter — Home & Settings mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --silver-1: #3c3c3c;
+    --silver-2: #6e6e6e;
+    --silver-3: #a1a1a1;
+    --bg: #000;
+    --ink: #fff;
+    --muted: #b8b8b8;
+    --hairline: #2a2a2a;
+    --ring: #ffffff;
+    --red:    #E53935;
+    --green:  #43A047;
+    --blue:   #1E88E5;
+    --yellow: #FDD835;
+    --purple: #8E24AA;
+    --orange: #FB8C00;
+    --primary: #4B79A1;
+    --destructive: #8B0000;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #1b1b1f; color: var(--ink); font-family: "Space Mono", ui-monospace, monospace; }
+  .stage {
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .stage h1 {
+    margin: 0 0 0;
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .stage p.note {
+    margin: 0;
+    font-size: 12px;
+    color: #888;
+    max-width: 720px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .row {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  /* Phone frame */
+  .phone {
+    width: 320px;
+    height: 660px;
+    border-radius: 36px;
+    background: #000;
+    box-shadow:
+      0 0 0 8px #1f1f22,
+      0 0 0 10px #3a3a3e,
+      0 18px 60px rgba(0,0,0,0.55);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone .notch {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 22px;
+    border-radius: 14px;
+    background: #1f1f22;
+    z-index: 10;
+  }
+  .phone .statusbar {
+    height: 38px;
+    flex: 0 0 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 11px;
+    color: var(--ink);
+    background: #000;
+  }
+  .phone .statusbar .time { font-weight: 700; }
+  .phone .screen {
+    flex: 1;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .phone-caption {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* ----- HOME ----- */
+  .home {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 24px;
+  }
+  .home .brand {
+    text-align: center;
+    margin-top: 24px;
+  }
+  .home .brand .title {
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  .home .brand .sub {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .home .menu {
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .menu-btn {
+    height: 56px;
+    border-radius: 14px;
+    border: 2px solid #cccccc55;
+    background: linear-gradient(135deg, #3c3c3c 0%, #6e6e6e 30%, #a1a1a1 50%, #6e6e6e 70%, #3c3c3c 100%);
+    color: #fff;
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .menu-btn.exit {
+    /* Hidden on iOS — we render the Android variant for the mockup */
+  }
+  .footer-hint {
+    text-align: center;
+    font-size: 10px;
+    color: #555;
+    margin-top: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  /* ----- SETTINGS ----- */
+  .settings {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 0 0;
+  }
+  .settings .header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px 12px;
+    border-bottom: 1px solid var(--hairline);
+    gap: 12px;
+  }
+  .settings .back {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .settings .back svg { width: 22px; height: 22px; }
+  .settings .header-title {
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    color: #fff;
+  }
+  .settings .body {
+    padding: 20px 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .section { margin-bottom: 28px; }
+  .section h2 {
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: #888;
+    margin: 0 0 12px 4px;
+    text-transform: uppercase;
+  }
+  .colors-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .colors-row .label {
+    width: 70px;
+    font-size: 12px;
+    color: #ddd;
+    letter-spacing: 0.06em;
+  }
+  .swatches {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    justify-content: space-between;
+  }
+  .swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .swatch.selected::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2.5px solid #fff;
+  }
+  .seg {
+    display: flex;
+    background: #16161a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .seg button {
+    flex: 1;
+    padding: 13px 0;
+    background: transparent;
+    border: 0;
+    color: #aaa;
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .seg button.active {
+    background: linear-gradient(135deg, #3c3c3c 0%, #6e6e6e 50%, #3c3c3c 100%);
+    color: #fff;
+  }
+  .stepper {
+    margin-top: 18px;
+    background: #0f0f12;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    padding: 18px 16px 16px;
+  }
+  .stepper .label {
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .stepper .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 8px;
+  }
+  .stepper .step-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 0;
+    background: linear-gradient(135deg, #3c3c3c, #6e6e6e, #3c3c3c);
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    font-family: "Space Mono", monospace;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .stepper .value {
+    font-family: "Space Mono", monospace;
+    font-weight: 700;
+    font-size: 48px;
+    color: #fff;
+    min-width: 96px;
+    text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  .presets {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    justify-content: center;
+  }
+  .chip {
+    border: 1px solid #444;
+    background: transparent;
+    color: #ccc;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .chip.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+  .hint {
+    margin-top: 10px;
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <h1>SWU Life Counter — Home &amp; Settings preview</h1>
+    <p class="note">
+      Mockups of the proposed UI. Real app uses React Native + Space Mono. The Exit button is shown here (Android variant); on iOS it is hidden.
+    </p>
+
+    <div class="row">
+      <!-- HOME SCREEN -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="time">9:41</span>
+            <span>● ●</span>
+          </div>
+          <div class="screen">
+            <div class="home">
+              <div class="brand">
+                <div class="title">SWU LIFE COUNTER</div>
+                <div class="sub">Star Wars Unlimited</div>
+              </div>
+              <div class="menu">
+                <button class="menu-btn">Start Game</button>
+                <button class="menu-btn">Settings</button>
+                <button class="menu-btn exit">Exit</button>
+              </div>
+              <div class="footer-hint">v1.1 · Android shown · iOS hides Exit</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-caption">Home (Android)</div>
+      </div>
+
+      <!-- SETTINGS SCREEN -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="time">9:41</span>
+            <span>● ●</span>
+          </div>
+          <div class="screen">
+            <div class="settings">
+              <div class="header">
+                <div class="back" aria-label="Back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </div>
+                <div class="header-title">SETTINGS</div>
+              </div>
+              <div class="body">
+                <div class="section">
+                  <h2>Team Colors</h2>
+                  <div class="colors-row">
+                    <div class="label">Player</div>
+                    <div class="swatches">
+                      <div class="swatch" style="background: var(--red)"></div>
+                      <div class="swatch selected" style="background: var(--green)"></div>
+                      <div class="swatch" style="background: var(--blue)"></div>
+                      <div class="swatch" style="background: var(--yellow)"></div>
+                      <div class="swatch" style="background: var(--purple)"></div>
+                      <div class="swatch" style="background: var(--orange)"></div>
+                    </div>
+                  </div>
+                  <div class="colors-row">
+                    <div class="label">Opponent</div>
+                    <div class="swatches">
+                      <div class="swatch selected" style="background: var(--red)"></div>
+                      <div class="swatch" style="background: var(--green)"></div>
+                      <div class="swatch" style="background: var(--blue)"></div>
+                      <div class="swatch" style="background: var(--yellow)"></div>
+                      <div class="swatch" style="background: var(--purple)"></div>
+                      <div class="swatch" style="background: var(--orange)"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <h2>Life Mode</h2>
+                  <div class="seg">
+                    <button class="active">Count Down</button>
+                    <button>Count Up</button>
+                  </div>
+
+                  <div class="stepper">
+                    <div class="label">Starting Life</div>
+                    <div class="row">
+                      <button class="step-btn">−</button>
+                      <div class="value">30</div>
+                      <button class="step-btn">+</button>
+                    </div>
+                    <div class="presets">
+                      <button class="chip">20</button>
+                      <button class="chip">25</button>
+                      <button class="chip active">30</button>
+                      <button class="chip">40</button>
+                    </div>
+                    <div class="hint">Hidden when Count Up is selected</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-caption">Settings</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

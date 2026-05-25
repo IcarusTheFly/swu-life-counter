@@ -1,6 +1,10 @@
 import React, {useRef} from "react";
-import {View, StyleSheet, Pressable, Animated, Image} from "react-native";
+import {Platform, View, StyleSheet, Pressable, Animated, Image} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
+
+// react-native-web logs a "native animated module is missing" warning whenever
+// useNativeDriver is true. Use the native driver only on real native platforms.
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
 export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage, isLandscape = false}) {
   const borderShineAnim = useRef(new Animated.Value(0)).current;
@@ -9,12 +13,12 @@ export default function InitiativeView({hasInitiative, claimInitiative, initiati
       Animated.timing(borderShineAnim, {
         toValue: 1,
         duration: 250,
-        useNativeDriver: true
+        useNativeDriver: USE_NATIVE_DRIVER
       }),
       Animated.timing(borderShineAnim, {
         toValue: 0,
         duration: 250,
-        useNativeDriver: true
+        useNativeDriver: USE_NATIVE_DRIVER
       })
     ]).start();
   };
@@ -50,7 +54,7 @@ export default function InitiativeView({hasInitiative, claimInitiative, initiati
       >
         <LinearGradient colors={["#a1a1a1", "#6e6e6e", "#a1a1a1"]} style={styles.initiativeBorder}>
           <View style={styles.initiativeIconWrapper}>
-            <Image source={initiativeImage} style={[styles.initiativeIcon, isLandscape ? styles.initiativeIconLandscape : styles.initiativeIconPortrait]} />
+            <Image source={initiativeImage} resizeMode={isLandscape ? "center" : "cover"} style={styles.initiativeIcon} />
           </View>
         </LinearGradient>
       </Animated.View>
@@ -95,11 +99,5 @@ const styles = StyleSheet.create({
   initiativeIcon: {
     width: "100%",
     height: "100%"
-  },
-  initiativeIconPortrait: {
-    resizeMode: "cover"
-  },
-  initiativeIconLandscape: {
-    resizeMode: "center"
   }
 });

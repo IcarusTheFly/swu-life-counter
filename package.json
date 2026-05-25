@@ -2,15 +2,18 @@
   "name": "swu-life-counter",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "node --test \"__tests__/**/*.test.js\""
   },
   "dependencies": {
-    "@expo-google-fonts/space-mono": "~0.2.3",
+    "@expo-google-fonts/fira-code": "^0.4.1",
     "@expo/metro-runtime": "~4.0.0",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "eas-cli": "^14.0.2",
     "expo": "^52.0.17",
     "expo-dev-client": "~5.0.5",
