@@ -2,7 +2,14 @@
 
 A life counter for *Star Wars Unlimited*.
 
-Launches into a **Home** screen with **Start Game**, **Settings**, and (on Android/web) **Exit**. The Settings screen lets you pick a color for each side from an 8-color lightsaber-inspired palette (red, orange, yellow, green, blue, purple, pink, white), choose **Count Down** (start at a configurable value, default 30) or **Count Up** (start at 0), and set the starting life with a stepper or 20/25/30/40 quick-pick presets. Settings are persisted across launches.
+Launches into a **Home** screen with **Start Game**, **Settings**, and (on Android/web) **Exit**. The Settings screen lets you:
+
+- Pick a team color for each side from an 8-color lightsaber-inspired palette (red, orange, yellow, green, blue, purple, pink, white).
+- Set **Initial Life Points** for the next game by typing a value directly (0–99), using the +/− stepper, or tapping a 20/25/30/40 quick-pick chip.
+- Toggle **Animations** (life-change overlay + initiative shine).
+- Toggle **Haptic feedback** for +/− presses (mobile only — hidden on web).
+
+Settings persist across launches. In-game life is clamped to `[-9, 99]` regardless of starting value (so cosmic-damage situations stay expressible).
 
 ## Development
 

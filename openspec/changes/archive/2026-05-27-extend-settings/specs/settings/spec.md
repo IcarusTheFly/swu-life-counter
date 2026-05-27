@@ -1,10 +1,11 @@
-# settings Specification
+## REMOVED Requirements
 
-## Purpose
+### Requirement: Life Mode selector offers Count Down and Count Up
+**Reason**: The Count Up / Count Down distinction was a thin behavioral difference (only the lower clamp differed) dressed up as a major mode setting. Collapsing it into a single "Initial life points" number — with the input range broadened to `[0, 99]` so "count up from 0" is directly pickable — removes a confusing UI layer without losing practical functionality.
 
-The `settings` capability defines user-configurable preferences for the life counter — team colors per side and initial life points — along with optional UX preferences (animations, haptic feedback on mobile). It also covers how those preferences are surfaced in the Settings screen, applied to the in-game life counter, clamped, and persisted across app launches.
+**Migration**: `SettingsContext.sanitize()` handles `lifeMode` during a one-time read migration: persisted `lifeMode: "up"` maps to `initialLife: 0` (preserving the prior up-mode behavior); persisted `lifeMode: "down"` keeps the existing `startingLife` as the new `initialLife`. The `lifeMode` key is no longer written by `updateSettings`, so it fades out of persisted storage on the next save.
 
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Settings screen exposes Team Colors and Initial Life controls
 The Settings screen SHALL contain two clearly labeled sections: **Team Colors** and **Initial Life Points**, plus optional UX-preference sections (see ADDED Requirements below). A back affordance (chevron in the top-left) SHALL return the user to Home.
@@ -21,49 +22,6 @@ The Settings screen SHALL contain two clearly labeled sections: **Team Colors** 
 - **WHEN** the user taps the back chevron on the Settings screen
 - **THEN** the Home screen is shown
 - **AND** any changes the user made are preserved (already persisted at the moment of change)
-
-### Requirement: Team color palette offers at least 4 colors per side
-The Team Colors section SHALL render two sub-sections, one for **Player** and one for **Opponent**. Each sub-section SHALL display a palette of at least 4 distinct colors. The user SHALL be able to select one color per side. The same color MAY be chosen for both sides.
-
-#### Scenario: Palette renders for both sides
-- **WHEN** the Settings screen is rendered
-- **THEN** the Team Colors section shows two rows (Player, Opponent)
-- **AND** each row shows at least 4 selectable color swatches
-
-#### Scenario: Selecting a color for Player
-- **GIVEN** the Player row currently shows green as selected
-- **WHEN** the user taps the blue swatch in the Player row
-- **THEN** the Player selection updates to blue
-- **AND** the blue swatch shows a selected-state indicator (e.g., a white ring)
-- **AND** the green swatch no longer shows the selected-state indicator
-
-#### Scenario: Both players may share a color
-- **GIVEN** Player is currently green and Opponent is currently red
-- **WHEN** the user taps green in the Opponent row
-- **THEN** the Opponent selection updates to green
-- **AND** no error is shown
-
-#### Scenario: Swatches meet minimum tap-target size
-- **WHEN** color swatches are rendered
-- **THEN** each swatch has a tappable area of at least 44 × 44 points
-
-### Requirement: Selected team colors are applied to the in-game life counter
-The selected Player and Opponent colors SHALL be applied to the corresponding side of the life counter when the next game starts. The press-feedback tint of the +/− buttons SHALL use the selected color at ~40% alpha.
-
-The visible application of the team color *on the background artwork itself* depends on per-color image assets being available (see the design doc's Open Questions for the asset strategy). When those assets land, the appropriate variant for each side's selected color SHALL be rendered.
-
-#### Scenario: Press-feedback uses the selected color
-- **GIVEN** the user has chosen Player = blue, Opponent = orange in Settings
-- **WHEN** the user returns to Home and taps "Start Game"
-- **AND** the user presses a +/− button on the Player side
-- **THEN** the press-feedback tint is blue
-- **WHEN** the user presses a +/− button on the Opponent side
-- **THEN** the press-feedback tint is orange
-
-#### Scenario: Defaults match prior visual behavior on first launch
-- **GIVEN** no settings have been persisted yet (first launch)
-- **WHEN** the user starts a game
-- **THEN** Player's press-feedback tint is green and Opponent's is red (preserving the pre-change visual)
 
 ### Requirement: Initial life points is configurable via typed input, stepper, and quick-pick presets
 The **Initial Life Points** section SHALL allow the user to set a value in the range **[0, 99]** via any of three controls:
@@ -190,6 +148,8 @@ All settings (player1Color, player2Color, initialLife, enableAnimations, enableH
 - **THEN** the new value applies for the current session
 - **AND** no error dialog is shown to the user
 - **AND** the failure is logged for diagnostics
+
+## ADDED Requirements
 
 ### Requirement: Animations are toggleable
 The Settings screen SHALL contain an **Animations** toggle. When disabled, the in-game life-change overlay animation SHALL be skipped (or set to zero-duration so the overlay still appears as feedback but does not animate in/out), and the initiative-claim shine animation SHALL likewise be non-animated. The default SHALL be **enabled** (animations on).

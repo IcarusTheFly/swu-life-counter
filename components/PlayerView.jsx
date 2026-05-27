@@ -1,5 +1,6 @@
 import React, {useState, useRef} from "react";
 import {Platform, View, Text, StyleSheet, Pressable, ImageBackground, Animated} from "react-native";
+import * as Haptics from "expo-haptics";
 import InitiativeView from "./InitiativeView";
 import {canUpdateLife} from "./lifeMath";
 import {textShadow} from "../utils/textShadow";
@@ -7,7 +8,23 @@ import {textShadow} from "../utils/textShadow";
 // react-native-web has no native animated module; only request native driver on real platforms.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-export default function PlayerView({hasInitiative, claimInitiative, backgroundImage, initiativeImage, playerLife, setPlayerLife, isOpponent = false, isLandscape = false, teamColor, lifeMode = "down"}) {
+// Haptic feedback is mobile-only — expo-haptics ships a web no-op but we still
+// gate the call so the import path is dormant on web.
+const HAPTICS_AVAILABLE = Platform.OS !== "web";
+
+export default function PlayerView({
+  hasInitiative,
+  claimInitiative,
+  backgroundImage,
+  initiativeImage,
+  playerLife,
+  setPlayerLife,
+  isOpponent = false,
+  isLandscape = false,
+  teamColor,
+  enableAnimations = true,
+  enableHaptics = false
+}) {
   const [lifeChange, setLifeChange] = useState(null);
 
   const [didFadeIn, setDidFadeIn] = useState(false);
@@ -17,9 +34,21 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
 
   const pressTint = teamColor ? teamColor.press : "#FFFFFF33";
 
+  // When animations are off, run the same Animated.timing calls but with
+  // duration: 0 so the overlay snaps in/out — feedback is preserved, motion
+  // is removed (see design.md Decision 5).
+  const fadeInDuration = enableAnimations ? 300 : 0;
+  const fadeOutDuration = enableAnimations ? 500 : 0;
+
   const updateLife = (change) => {
-    if (canUpdateLife(playerLife, change, lifeMode)) {
+    if (canUpdateLife(playerLife, change)) {
       clearTimeout(fadeOutTimeout.current);
+
+      if (enableHaptics && HAPTICS_AVAILABLE) {
+        // Fire-and-forget; the promise rejection (e.g. user denied haptics
+        // permission on iOS) is harmless and not worth surfacing.
+        Haptics.selectionAsync().catch(() => {});
+      }
 
       setPlayerLife((prevLife) => prevLife + change);
       setLifeChange((prev) => (prev || 0) + change);
@@ -28,12 +57,12 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 300,
+            duration: fadeInDuration,
             useNativeDriver: USE_NATIVE_DRIVER
           }),
           Animated.timing(translateYAnim, {
             toValue: 0,
-            duration: 300,
+            duration: fadeInDuration,
             useNativeDriver: USE_NATIVE_DRIVER
           })
         ]).start();
@@ -43,7 +72,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
       fadeOutTimeout.current = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 500,
+          duration: fadeOutDuration,
           useNativeDriver: USE_NATIVE_DRIVER
         }).start(() => {
           setLifeChange(null);
@@ -89,7 +118,7 @@ export default function PlayerView({hasInitiative, claimInitiative, backgroundIm
 
       <View style={styles.divider} />
 
-      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} />
+      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} enableAnimations={enableAnimations} />
     </ImageBackground>
   );
 }

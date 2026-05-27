@@ -6,18 +6,21 @@ import {LinearGradient} from "expo-linear-gradient";
 // useNativeDriver is true. Use the native driver only on real native platforms.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage, isLandscape = false}) {
+export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage, isLandscape = false, enableAnimations = true}) {
   const borderShineAnim = useRef(new Animated.Value(0)).current;
+  // When animations are off, run the same sequence with duration 0 so the
+  // scale/opacity transition is instantaneous (matches PlayerView's pattern).
+  const shineDuration = enableAnimations ? 250 : 0;
   const triggerBorderAnimation = () => {
     Animated.sequence([
       Animated.timing(borderShineAnim, {
         toValue: 1,
-        duration: 250,
+        duration: shineDuration,
         useNativeDriver: USE_NATIVE_DRIVER
       }),
       Animated.timing(borderShineAnim, {
         toValue: 0,
-        duration: 250,
+        duration: shineDuration,
         useNativeDriver: USE_NATIVE_DRIVER
       })
     ]).start();

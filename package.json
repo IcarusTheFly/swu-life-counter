@@ -18,6 +18,7 @@
     "expo": "^52.0.17",
     "expo-dev-client": "~5.0.5",
     "expo-font": "^13.0.1",
+    "expo-haptics": "~14.0.1",
     "expo-keep-awake": "~14.0.1",
     "expo-linear-gradient": "~14.0.1",
     "expo-navigation-bar": "~4.0.5",

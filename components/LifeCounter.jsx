@@ -18,26 +18,27 @@ export default function LifeCounter({onReturnHome}) {
   // reachable from Home), so this is purely about making reset deterministic.
   const startConfig = useMemo(
     () => ({
-      startingLife: settings.lifeMode === "up" ? 0 : settings.startingLife,
-      lifeMode: settings.lifeMode,
+      initialLife: settings.initialLife,
       player1Color: TEAM_COLORS[settings.player1Color] || TEAM_COLORS.green,
-      player2Color: TEAM_COLORS[settings.player2Color] || TEAM_COLORS.red
+      player2Color: TEAM_COLORS[settings.player2Color] || TEAM_COLORS.red,
+      enableAnimations: settings.enableAnimations,
+      enableHaptics: settings.enableHaptics
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  const [player1Life, setPlayer1Life] = useState(startConfig.startingLife);
-  const [player2Life, setPlayer2Life] = useState(startConfig.startingLife);
+  const [player1Life, setPlayer1Life] = useState(startConfig.initialLife);
+  const [player2Life, setPlayer2Life] = useState(startConfig.initialLife);
   const [initiativePlayer, setInitiativePlayer] = useState(PLAYER2_ID);
   const [dialogVisible, setDialogVisible] = useState(false);
 
   const resetLife = useCallback(() => {
     setInitiativePlayer(PLAYER2_ID);
-    setPlayer1Life(startConfig.startingLife);
-    setPlayer2Life(startConfig.startingLife);
+    setPlayer1Life(startConfig.initialLife);
+    setPlayer2Life(startConfig.initialLife);
     setDialogVisible(false);
-  }, [startConfig.startingLife]);
+  }, [startConfig.initialLife]);
 
   const returnHome = useCallback(() => {
     setDialogVisible(false);
@@ -69,7 +70,8 @@ export default function LifeCounter({onReturnHome}) {
         isOpponent={true}
         isLandscape={isLandscape}
         teamColor={startConfig.player1Color}
-        lifeMode={startConfig.lifeMode}
+        enableAnimations={startConfig.enableAnimations}
+        enableHaptics={startConfig.enableHaptics}
       />
 
       <Divider onPress={() => setDialogVisible(true)} />
@@ -93,7 +95,8 @@ export default function LifeCounter({onReturnHome}) {
         initiativeImage={require("../assets/initiative-icon.png")}
         isLandscape={isLandscape}
         teamColor={startConfig.player2Color}
-        lifeMode={startConfig.lifeMode}
+        enableAnimations={startConfig.enableAnimations}
+        enableHaptics={startConfig.enableHaptics}
       />
     </View>
   );
