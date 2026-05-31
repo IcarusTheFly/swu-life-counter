@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import InitiativeView from "./InitiativeView";
 import {canUpdateLife} from "./lifeMath";
 import {textShadow} from "../utils/textShadow";
+import {ASPECTS} from "../constants/decks";
 
 // react-native-web has no native animated module; only request native driver on real platforms.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -23,7 +24,17 @@ export default function PlayerView({
   isLandscape = false,
   teamColor,
   enableAnimations = true,
-  enableHaptics = false
+  enableHaptics = false,
+  // Deck-badge props. In-game every side resolves to either a real deck or
+  // Random (an unset side is normalized to Random — see LifeCounter), so the
+  // badge always renders and is a tappable control opening a deck picker.
+  deckName = null,
+  deckAspects = [],
+  isRandom = false,
+  isPlayerSide = false,
+  // Tapping the badge asks the parent to open the deck picker for this side.
+  // Optional: when omitted the badge falls back to a non-interactive label.
+  onPressBadge = null
 }) {
   const [lifeChange, setLifeChange] = useState(null);
 
@@ -82,8 +93,24 @@ export default function PlayerView({
     }
   };
 
+  // The badge is anchored bottom-left of each ImageBackground. The
+  // opponent half's 180° parent rotation cascades, so on the device each
+  // player still reads their own deck name in their physical bottom-left
+  // corner (see design.md Decision 9). No counter-rotation needed. It always
+  // renders in-game because every side resolves to a deck or Random.
+  const renderDeckBadge = isRandom || deckName !== null;
+
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.player, isOpponent && styles.opponent]}>
+      {renderDeckBadge ? (
+        <DeckBadge
+          deckName={deckName}
+          deckAspects={deckAspects}
+          isRandom={isRandom}
+          isPlayerSide={isPlayerSide}
+          onPress={onPressBadge}
+        />
+      ) : null}
       {lifeChange !== null && (
         <View style={[styles.lifeChangeContent, isLandscape ? styles.lifeChangeContentLandscape : styles.lifeChangeContentPortrait]}>
           <Animated.Text
@@ -120,6 +147,68 @@ export default function PlayerView({
 
       <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} enableAnimations={enableAnimations} />
     </ImageBackground>
+  );
+}
+
+// Small per-side identity badge anchored at the bottom-left of each
+// ImageBackground inside a translucent pill. The opponent side's
+// `styles.opponent` rotation cascades, so each player still reads their
+// own badge right-side-up in their physical bottom-left corner — see
+// design.md Decision 9.
+function DeckBadge({deckName, deckAspects, isRandom, isPlayerSide, onPress}) {
+  const aspectsList = Array.isArray(deckAspects) ? deckAspects : [];
+  const sideWord = isPlayerSide ? "Your" : "Opponent's";
+  // Accessibility label: Random vs a named deck. When tappable the label
+  // advertises that the deck can be changed.
+  let accessibilityLabel;
+  if (isRandom) {
+    accessibilityLabel = `${sideWord} deck: Random`;
+  } else {
+    const aspectsStr = aspectsList.length > 0 ? aspectsList.join(", ") : "none";
+    accessibilityLabel = `${sideWord} deck: ${deckName}, aspects ${aspectsStr}`;
+  }
+  if (onPress) accessibilityLabel += ". Tap to change deck.";
+
+  const content = (
+    <>
+      {!isRandom && aspectsList.length > 0 ? (
+        <View style={styles.deckBadgeDots}>
+          {aspectsList.map((aspect) => {
+            const spec = ASPECTS[aspect];
+            if (!spec) return null;
+            return <View key={aspect} style={[styles.deckBadgeDot, {backgroundColor: spec.color}]} />;
+          })}
+        </View>
+      ) : null}
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={[styles.deckBadgeText, isRandom && styles.deckBadgeTextRandom]}
+      >
+        {isRandom ? "Random" : deckName}
+      </Text>
+      {onPress ? <Text style={styles.deckBadgeChevron}>▾</Text> : null}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({pressed}) => [styles.deckBadge, pressed && styles.deckBadgePressed]}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Opens a list to pick this side's deck"
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.deckBadge} accessibilityRole="text" accessibilityLabel={accessibilityLabel}>
+      {content}
+    </View>
   );
 }
 
@@ -190,5 +279,57 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#FFF",
     borderStyle: "dashed"
+  },
+  // Per-side deck-identity badge. Anchored bottom-left of the
+  // ImageBackground inside a translucent pill; the opponent half's parent
+  // rotation keeps it right-side-up in that player's physical bottom-left
+  // corner (see design.md Decision 9). The 16px inset keeps it clear of
+  // the central reset/end-game cluster and the InitiativeView chip.
+  deckBadge: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: "45%",
+    zIndex: 2,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3
+  },
+  deckBadgePressed: {
+    opacity: 0.7,
+    backgroundColor: "rgba(0,0,0,0.5)"
+  },
+  deckBadgeChevron: {
+    color: "rgba(255,255,255,0.75)",
+    fontFamily: "FiraCode_700Bold",
+    fontSize: 11,
+    marginLeft: 5
+  },
+  deckBadgeDots: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 6,
+    gap: 1.5
+  },
+  deckBadgeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.4)"
+  },
+  deckBadgeText: {
+    color: "white",
+    fontFamily: "FiraCode_400Regular",
+    fontSize: 13,
+    letterSpacing: 0.3,
+    flexShrink: 1,
+    ...textShadow({color: "rgba(0,0,0,0.6)", offset: {width: 0, height: 2}, radius: 6})
+  },
+  deckBadgeTextRandom: {
+    fontStyle: "italic"
   }
 });

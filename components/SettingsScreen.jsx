@@ -2,12 +2,20 @@ import React, {useEffect, useRef, useState} from "react";
 import {BackHandler, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import BackIcon from "../icons/BackIcon";
+import Dropdown from "./Dropdown";
 import {useSettings} from "../context/SettingsContext";
 import {INITIAL_LIFE_MAX, INITIAL_LIFE_MIN, INITIAL_LIFE_PRESETS} from "../constants/settings";
 import {TEAM_COLORS, TEAM_COLOR_KEYS} from "../constants/teamColors";
 import {textShadow} from "../utils/textShadow";
 
 const SHOW_HAPTICS_SECTION = Platform.OS !== "web";
+
+// Module-level so it's built once, not per render.
+const COLOR_OPTIONS = TEAM_COLOR_KEYS.map((key) => ({
+  key,
+  label: TEAM_COLORS[key].name,
+  aspectColor: TEAM_COLORS[key].base
+}));
 
 export default function SettingsScreen({onBack}) {
   const {settings, updateSettings} = useSettings();
@@ -21,14 +29,9 @@ export default function SettingsScreen({onBack}) {
     return () => sub.remove();
   }, [onBack]);
 
-  const setPlayer1Color = (key) => updateSettings({player1Color: key});
-  const setPlayer2Color = (key) => updateSettings({player2Color: key});
-
   const stepInitialLife = (delta) => {
     const next = Math.max(INITIAL_LIFE_MIN, Math.min(INITIAL_LIFE_MAX, settings.initialLife + delta));
-    if (next !== settings.initialLife) {
-      updateSettings({initialLife: next});
-    }
+    if (next !== settings.initialLife) updateSettings({initialLife: next});
   };
 
   const setInitialLife = (value) => updateSettings({initialLife: value});
@@ -36,40 +39,51 @@ export default function SettingsScreen({onBack}) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} hitSlop={8} style={({pressed}) => [styles.backBtn, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel="Back to Home">
+        <Pressable
+          onPress={onBack}
+          hitSlop={8}
+          style={({pressed}) => [styles.backBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Back to Home"
+        >
           <BackIcon stroke="#FFF" size={22} />
         </Pressable>
         <Text style={styles.headerTitle}>SETTINGS</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* TEAM COLORS */}
+
+        {/* TEAM COLORS — two dropdowns side by side */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>TEAM COLORS</Text>
-
-          <ColorRow label="Player" selectedKey={settings.player1Color} onSelect={setPlayer1Color} />
-          <ColorRow label="Opponent" selectedKey={settings.player2Color} onSelect={setPlayer2Color} />
+          <View style={styles.colorsCard}>
+            <Dropdown
+              label="PLAYER"
+              value={settings.player1Color}
+              options={COLOR_OPTIONS}
+              onSelect={(key) => updateSettings({player1Color: key})}
+              enableAnimations={settings.enableAnimations}
+              accessibilityLabel={`Player color: ${TEAM_COLORS[settings.player1Color]?.name ?? ""}`}
+            />
+            <Dropdown
+              label="OPPONENT"
+              value={settings.player2Color}
+              options={COLOR_OPTIONS}
+              onSelect={(key) => updateSettings({player2Color: key})}
+              enableAnimations={settings.enableAnimations}
+              accessibilityLabel={`Opponent color: ${TEAM_COLORS[settings.player2Color]?.name ?? ""}`}
+            />
+          </View>
         </View>
 
-        {/* INITIAL LIFE POINTS */}
+        {/* INITIAL LIFE POINTS — editable input between − and + */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>INITIAL LIFE POINTS</Text>
-
-          <View style={styles.stepperCard}>
-            <InitialLifeTextInput value={settings.initialLife} onCommit={setInitialLife} />
-
-            <View style={styles.stepperRow}>
-              <StepperButton symbol="−" onPress={() => stepInitialLife(-1)} disabled={settings.initialLife <= INITIAL_LIFE_MIN} accessibilityLabel="Decrease initial life" />
-              <Text style={styles.stepperValue}>{settings.initialLife}</Text>
-              <StepperButton symbol="+" onPress={() => stepInitialLife(1)} disabled={settings.initialLife >= INITIAL_LIFE_MAX} accessibilityLabel="Increase initial life" />
-            </View>
-
-            <View style={styles.presetsRow}>
-              {INITIAL_LIFE_PRESETS.map((value) => (
-                <PresetChip key={value} value={value} active={settings.initialLife === value} onPress={() => setInitialLife(value)} />
-              ))}
-            </View>
-          </View>
+          <LifeStepper
+            value={settings.initialLife}
+            onStep={stepInitialLife}
+            onCommit={setInitialLife}
+          />
         </View>
 
         {/* ANIMATIONS */}
@@ -100,96 +114,86 @@ export default function SettingsScreen({onBack}) {
   );
 }
 
-function ColorRow({label, selectedKey, onSelect}) {
+// ─── Life stepper with inline editable value ─────────────────────────────────
+//
+// The big number between − and + is now a TextInput so the user can type
+// directly. Validates on blur / submit; flashes an error for 2 s on bad input
+// and reverts to the last valid value. The separate "TYPE A VALUE" section
+// above the stepper has been removed.
+
+function LifeStepper({value, onStep, onCommit}) {
+  const [draft, setDraft] = useState(String(value));
+  const [error, setError] = useState(null);
+  const errorRef = useRef(null);
+
+  // Keep draft in sync when the value changes via stepper or preset.
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  useEffect(() => () => clearTimeout(errorRef.current), []);
+
+  const flashError = (msg) => {
+    setError(msg);
+    clearTimeout(errorRef.current);
+    errorRef.current = setTimeout(() => setError(null), 2000);
+  };
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) { setDraft(String(value)); return; }
+    const n = Number(trimmed);
+    if (!Number.isInteger(n) || n < INITIAL_LIFE_MIN || n > INITIAL_LIFE_MAX) {
+      flashError(`${INITIAL_LIFE_MIN}–${INITIAL_LIFE_MAX} only`);
+      setDraft(String(value));
+      return;
+    }
+    if (n !== value) onCommit(n);
+  };
+
   return (
-    <View style={styles.colorsRow}>
-      <Text style={styles.colorsLabel}>{label}</Text>
-      <View style={styles.swatches}>
-        {TEAM_COLOR_KEYS.map((key) => {
-          const color = TEAM_COLORS[key];
-          const selected = selectedKey === key;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => onSelect(key)}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={`${label} color ${color.name}`}
-              accessibilityState={{selected}}
-              style={({pressed}) => [styles.swatchHit, pressed && styles.pressed]}
-            >
-              <View style={[styles.swatch, {backgroundColor: color.base}, selected && styles.swatchSelected]} />
-            </Pressable>
-          );
-        })}
+    <View style={styles.stepperCard}>
+      <View style={styles.stepperRow}>
+        <StepperButton
+          symbol="−"
+          onPress={() => onStep(-1)}
+          disabled={value <= INITIAL_LIFE_MIN}
+          accessibilityLabel="Decrease initial life"
+        />
+
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          keyboardType="number-pad"
+          returnKeyType="done"
+          maxLength={3}
+          selectTextOnFocus
+          style={styles.stepperInput}
+          accessibilityLabel="Initial life points"
+        />
+
+        <StepperButton
+          symbol="+"
+          onPress={() => onStep(1)}
+          disabled={value >= INITIAL_LIFE_MAX}
+          accessibilityLabel="Increase initial life"
+        />
+      </View>
+
+      {error ? <Text style={styles.stepperError}>{error}</Text> : null}
+
+      <View style={styles.presetsRow}>
+        {INITIAL_LIFE_PRESETS.map((v) => (
+          <PresetChip key={v} value={v} active={value === v} onPress={() => onCommit(v)} />
+        ))}
       </View>
     </View>
   );
 }
 
-/**
- * Numeric text input for Initial Life Points. Uses a local draft so we don't
- * commit on every keystroke; commits on blur or onSubmitEditing. Out-of-range
- * input reverts to the persisted value and shows an inline error for ~2s.
- */
-function InitialLifeTextInput({value, onCommit}) {
-  const [draft, setDraft] = useState(String(value));
-  const [error, setError] = useState(null);
-  const errorTimeoutRef = useRef(null);
-
-  // Keep the draft in sync if the persisted value changes from elsewhere
-  // (e.g. stepper or preset chip).
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-
-  // Clear any pending error-clear timeout when the component unmounts.
-  useEffect(() => () => clearTimeout(errorTimeoutRef.current), []);
-
-  const flashError = (message) => {
-    setError(message);
-    clearTimeout(errorTimeoutRef.current);
-    errorTimeoutRef.current = setTimeout(() => setError(null), 2000);
-  };
-
-  const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed === "") {
-      // Empty input — silently revert without an error message.
-      setDraft(String(value));
-      return;
-    }
-    const parsed = Number(trimmed);
-    if (!Number.isInteger(parsed) || parsed < INITIAL_LIFE_MIN || parsed > INITIAL_LIFE_MAX) {
-      flashError(`${INITIAL_LIFE_MIN}–${INITIAL_LIFE_MAX} only`);
-      setDraft(String(value));
-      return;
-    }
-    if (parsed !== value) {
-      onCommit(parsed);
-    }
-  };
-
-  return (
-    <View style={styles.textInputWrap}>
-      <Text style={styles.textInputLabel}>TYPE A VALUE</Text>
-      <TextInput
-        value={draft}
-        onChangeText={setDraft}
-        onBlur={commit}
-        onSubmitEditing={commit}
-        keyboardType="number-pad"
-        returnKeyType="done"
-        maxLength={3}
-        style={styles.textInput}
-        selectTextOnFocus
-        accessibilityLabel="Initial life points"
-        placeholderTextColor="#666"
-      />
-      {error ? <Text style={styles.textInputError}>{error}</Text> : null}
-    </View>
-  );
-}
+// ─── Shared sub-components ────────────────────────────────────────────────────
 
 function StepperButton({symbol, onPress, disabled, accessibilityLabel}) {
   return (
@@ -199,9 +203,18 @@ function StepperButton({symbol, onPress, disabled, accessibilityLabel}) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{disabled}}
-      style={({pressed}) => [styles.stepperBtn, pressed && !disabled && styles.pressed, disabled && styles.stepperBtnDisabled]}
+      style={({pressed}) => [
+        styles.stepperBtn,
+        pressed && !disabled && styles.pressed,
+        disabled && styles.stepperBtnDisabled
+      ]}
     >
-      <LinearGradient colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.stepperBtnGradient}>
+      <LinearGradient
+        colors={["#3c3c3c", "#6e6e6e", "#3c3c3c"]}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={styles.stepperBtnGradient}
+      >
         <Text style={styles.stepperBtnLabel}>{symbol}</Text>
       </LinearGradient>
     </Pressable>
@@ -210,16 +223,18 @@ function StepperButton({symbol, onPress, disabled, accessibilityLabel}) {
 
 function PresetChip({value, active, onPress}) {
   return (
-    <Pressable onPress={onPress} style={({pressed}) => [styles.chip, active && styles.chipActive, pressed && styles.pressed]} accessibilityRole="button" accessibilityState={{selected: active}} accessibilityLabel={`Set initial life to ${value}`}>
+    <Pressable
+      onPress={onPress}
+      style={({pressed}) => [styles.chip, active && styles.chipActive, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityState={{selected: active}}
+      accessibilityLabel={`Set initial life to ${value}`}
+    >
       <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{value}</Text>
     </Pressable>
   );
 }
 
-/**
- * Reusable toggle row for boolean settings. Label + optional description
- * on the left, native Switch on the right.
- */
 function SettingToggle({label, description, value, onValueChange}) {
   return (
     <View style={styles.toggleRow}>
@@ -230,8 +245,6 @@ function SettingToggle({label, description, value, onValueChange}) {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        // The default thumb/track colors look fine in dark mode on every platform;
-        // we only nudge the track-on color so it matches the silver theme.
         trackColor={{false: "#3a3a3a", true: "#6e6e6e"}}
         thumbColor={value ? "#e8e8e8" : "#9a9a9a"}
         accessibilityRole="switch"
@@ -241,6 +254,8 @@ function SettingToggle({label, description, value, onValueChange}) {
     </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -287,37 +302,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 2
   },
-  colorsRow: {
+
+  // ── Color dropdowns ──
+  colorsCard: {
     flexDirection: "row",
-    alignItems: "center",
     gap: 12,
-    marginBottom: 14
+    backgroundColor: "#0f0f12",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    padding: 14
   },
-  colorsLabel: {
-    color: "#DDD",
-    fontFamily: "FiraCode_400Regular",
-    fontSize: 13,
-    letterSpacing: 1,
-    width: 76
-  },
-  swatches: {
-    flexDirection: "row",
-    flex: 1,
-    justifyContent: "space-between"
-  },
-  swatchHit: {
-    padding: 4
-  },
-  swatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 15
-  },
-  swatchSelected: {
-    borderWidth: 2.5,
-    borderColor: "#FFF",
-    transform: [{scale: 1.1}]
-  },
+
+  // ── Life stepper ──
   stepperCard: {
     backgroundColor: "#0f0f12",
     borderRadius: 14,
@@ -326,49 +323,17 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: "center"
   },
-  textInputWrap: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 14
-  },
-  textInputLabel: {
-    color: "#888",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 11,
-    letterSpacing: 3,
-    marginBottom: 6
-  },
-  textInput: {
-    color: "#FFF",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 22,
-    backgroundColor: "#16161a",
-    borderWidth: 1,
-    borderColor: "#3a3a3a",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minWidth: 96,
-    textAlign: "center"
-  },
-  textInputError: {
-    color: "#ff6b6b",
-    fontFamily: "FiraCode_400Regular",
-    fontSize: 12,
-    marginTop: 6,
-    letterSpacing: 0.5
-  },
   stepperRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 24,
-    marginTop: 4
+    gap: 20
   },
   stepperBtn: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    overflow: "hidden"
+    overflow: "hidden",
+    flexShrink: 0
   },
   stepperBtnDisabled: {
     opacity: 0.4
@@ -385,13 +350,29 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     ...textShadow({color: "rgba(0,0,0,0.5)", offset: {width: 0, height: 2}, radius: 4})
   },
-  stepperValue: {
+  // The big editable number between − and +. Fixed width + flexShrink:0 so it
+  // never overflows the card on wide web viewports (mirrors the BulkAdd fix).
+  stepperInput: {
     color: "#FFF",
     fontFamily: "FiraCode_700Bold",
     fontSize: 48,
-    minWidth: 96,
+    width: 120,
+    flexGrow: 0,
+    flexShrink: 0,
     textAlign: "center",
-    ...textShadow({color: "rgba(0,0,0,0.6)", offset: {width: 0, height: 2}, radius: 6})
+    backgroundColor: "#16161a",
+    borderWidth: 1,
+    borderColor: "#3a3a3a",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  stepperError: {
+    color: "#ff6b6b",
+    fontFamily: "FiraCode_400Regular",
+    fontSize: 12,
+    marginTop: 8,
+    letterSpacing: 0.5
   },
   presetsRow: {
     flexDirection: "row",
@@ -423,6 +404,8 @@ const styles = StyleSheet.create({
   chipLabelActive: {
     color: "#000"
   },
+
+  // ── Toggles ──
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",

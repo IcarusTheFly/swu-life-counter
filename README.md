@@ -2,14 +2,26 @@
 
 A life counter for *Star Wars Unlimited*.
 
-Launches into a **Home** screen with **Start Game**, **Settings**, and (on Android/web) **Exit**. The Settings screen lets you:
+Launches into a **Home** screen with **Start Game**, **Decks**, **Settings**, and (on Android/web) **Exit**. The Settings screen lets you:
 
-- Pick a team color for each side from an 8-color lightsaber-inspired palette (red, orange, yellow, green, blue, purple, pink, white).
-- Set **Initial Life Points** for the next game by typing a value directly (0–99), using the +/− stepper, or tapping a 20/25/30/40 quick-pick chip.
+- Pick a team color for each side via two **dropdown selectors** (colored dot + name) drawing from an 8-color lightsaber-inspired palette (red, orange, yellow, green, blue, purple, pink, white).
+- Set **Initial Life Points** (default **0**) by editing the number directly between the `−` and `+` buttons, or tapping a quick-pick chip: **0 / 25 / 30 / 35**.
 - Toggle **Animations** (life-change overlay + initiative shine).
 - Toggle **Haptic feedback** for +/− presses (mobile only — hidden on web).
 
 Settings persist across launches. In-game life is clamped to `[-9, 99]` regardless of starting value (so cosmic-damage situations stay expressible).
+
+## Decks and stats
+
+The Decks screen is **one shared list** of decks, sorted alphabetically by default. Each deck has a name (≤ 50 chars), 0–3 aspects (Vigilance, Command, Aggression, Cunning, Heroism, Villainy), an optional leader, an optional **archetype** tag, and free-text notes. Decks render as cards with an aspect-colored accent, win %, streak, and a win-rate bar. A collapsible **Filters** panel narrows by name / aspect / archetype and sets the sort (Name or Games played) and order (Asc/Desc).
+
+On Home, two inline dropdowns — **Player** and **Opponent** — both pick from the shared list, and **either may be Random**. The same deck can be chosen for both sides (a mirror, which counts twice). **Start Game** plays the selected matchup. From a deck's detail screen, two **default checkboxes** (silver = Player, gold = Opponent) let you pin that deck as the default for each side; tapping a checked box unchecks it and resets that side to Random.
+
+In-game, each side shows its deck in a bottom-left bubble that you can **tap to change the deck mid-game**, and an **end-game** checkmark sits on the divider next to the reset icon (enabled as long as at least one side is a real deck). Tapping that checkmark prompts for the outcome (`<player>` won / `<opponent>` won / **Draw** / **Don't save**) and records it. Leaving via the reset modal's **Return to Home** is a deliberate exit — it does **not** prompt and records nothing.
+
+**Stats are symmetric:** one recorded game updates BOTH decks (A beats B ⇒ A gains a win vs B and B gains a loss vs A). A game vs **Random** still counts toward the real deck and shows under a "Random" row in its matchups. Each deck's detail screen shows overall W-L-D + win% + streak and head-to-head **matchups grouped by event** (e.g. PETRANAKI / LOCALS), each with its own archetype tag + inline-editable strategy comments. **Bulk Add** lets you backfill a season of playtesting in one go (pick a matchup, type W/L/D + an event tag). **Game History** lists every game the deck played, **grouped by opponent** — your record plus each individual game "against deck X", with a W/L/D chip, event, date, and notes. From Game History you can also **add** a new game inline, **edit** any game row in-place (outcome / event / comment), or **delete** individual records.
+
+Decks, matchups, and game history persist across launches. Deleting a deck cascades its matchups + games and self-heals the loadout. Storage migrates automatically across versions.
 
 ## Development
 
