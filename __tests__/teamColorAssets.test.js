@@ -1,8 +1,10 @@
 // Catches the "added a color but forgot to regenerate background images" foot-gun.
 //
-// `teamColors.js` static-requires `bg_complete_<key>{,_landscape}.png` per color
-// — Metro would fail at bundle time if a PNG is missing, but that's a slow,
-// noisy failure mode. This test fails fast at `npm test` time instead.
+// `teamColors.js` static-requires `bg_separated_lines_<key>{,_landscape}.png`
+// (the transparent, team-colored curved-line overlays drawn in-game, on top of
+// the shared animated space) per color — Metro would fail at bundle time if a
+// PNG is missing, but that's a slow, noisy failure mode. This test fails fast
+// at `npm test` time instead.
 //
 // Imports `teamColorKeys.js` (pure JS) rather than `teamColors.js` (which would
 // pull in PNG requires that Node can't resolve).
@@ -30,12 +32,12 @@ test("teamColorKeys entries are lowercase alphanumeric (safe for filenames + sto
   }
 });
 
-test("every team color has its portrait + landscape generated PNGs on disk", () => {
+test("every team color has its portrait + landscape line-overlay PNGs on disk", () => {
   const missing = [];
   for (const key of TEAM_COLOR_KEYS) {
     for (const variant of ["", "_landscape"]) {
-      const file = join(ASSETS_DIR, `bg_complete_${key}${variant}.png`);
-      if (!existsSync(file)) missing.push(`bg_complete_${key}${variant}.png`);
+      const file = join(ASSETS_DIR, `bg_separated_lines_${key}${variant}.png`);
+      if (!existsSync(file)) missing.push(`bg_separated_lines_${key}${variant}.png`);
     }
   }
   assert.deepEqual(

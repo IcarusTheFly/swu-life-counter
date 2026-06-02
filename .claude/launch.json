@@ -4,7 +4,7 @@
     {
       "name": "mockup",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "5733", "--directory", "openspec/changes/add-home-and-settings/mockup"],
+      "runtimeArgs": ["-m", "http.server", "5733", "--directory", "openspec/changes/archive/2026-05-26-add-home-and-settings/mockup"],
       "port": 5733
     },
     {
@@ -12,6 +12,12 @@
       "runtimeExecutable": "py",
       "runtimeArgs": ["-m", "http.server", "5734"],
       "port": 5734
+    },
+    {
+      "name": "expo-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "port": 8081
     }
   ]
 }

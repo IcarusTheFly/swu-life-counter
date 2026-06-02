@@ -1,8 +1,14 @@
 # Tuning `generate_color_variants.py`
 
-This script generates the colored background variants used by the in-game
-life counter (`assets/bg_complete_<color>{,_landscape}.png`). All tuning happens
-by editing the constants near the top of the script — there are no CLI flags.
+This script generates the colored background variants for the in-game life
+counter. As of the `modernize-ui` change the app renders the **transparent,
+line-only overlays** (`assets/bg_separated_lines_<color>{,_landscape}.png` —
+line + glow on a transparent background) on top of the shared animated space,
+so those are now the **first-class** in-game assets (required + checked by
+`__tests__/teamColorAssets.test.js`). The opaque `bg_complete_<color>{,_landscape}.png`
+(space + lines baked together) are still produced but are no longer rendered.
+All tuning happens by editing the constants near the top of the script — there
+are no CLI flags.
 
 ## Run it
 

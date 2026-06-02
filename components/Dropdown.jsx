@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import {Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import {textShadow} from "../utils/textShadow";
+import {animatedDuration} from "../utils/animation";
 
 // react-native-web has no native animated module; mirror the app's gate.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -101,7 +102,7 @@ export function DropdownSheet({visible, title, options, selectedKey, onPick, onC
       translateY.setValue(12);
       return;
     }
-    const duration = enableAnimations ? 160 : 0;
+    const duration = animatedDuration(160, enableAnimations);
     Animated.parallel([
       Animated.timing(opacity, {toValue: 1, duration, useNativeDriver: USE_NATIVE_DRIVER}),
       Animated.timing(translateY, {toValue: 0, duration, useNativeDriver: USE_NATIVE_DRIVER})
@@ -112,10 +113,14 @@ export function DropdownSheet({visible, title, options, selectedKey, onPick, onC
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss">
-        {/* Inner Pressable stops the backdrop tap from closing when the user
-            taps inside the sheet. */}
-        <Pressable onPress={() => {}} style={styles.sheetWrap}>
+      <View style={styles.overlay}>
+        {/* Backdrop is a SIBLING of the sheet (absolutely filled BEHIND it),
+            NOT a parent — so the option buttons are never rendered as
+            descendants of another button (fixes the validateDOMNesting
+            "<button> in <button>" warning on web). Tapping outside the sheet
+            hits the backdrop → close; taps inside hit the sheet on top. */}
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss" />
+        <View style={styles.sheetWrap}>
           <Animated.View style={{opacity, transform: [{translateY}], width: "100%"}}>
             <LinearGradient
               colors={["#1c1c22", "#141418"]}
@@ -160,8 +165,8 @@ export function DropdownSheet({visible, title, options, selectedKey, onPick, onC
               </ScrollView>
             </LinearGradient>
           </Animated.View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -223,6 +228,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject
   },
   sheetWrap: {
     width: "100%",

@@ -2,14 +2,32 @@ import React, {useEffect, useRef} from "react";
 import {Animated, Platform, Pressable, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import {textShadow} from "../utils/textShadow";
+import {GRADIENTS} from "../constants/theme";
+import {animatedDuration} from "../utils/animation";
 
 // react-native-web has no native animated module; mirror PlayerView's gate.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-const VARIANT_COLORS = {
-  destructive: "#8B0000",
-  primary: "#4B79A1",
-  neutral: "#555555"
+// Metallic button language (modernize-ui): affirmative/player → silver,
+// opponent → gold (matching the Player=silver / Opponent=gold convention used
+// by the deck default buttons), destructive → metallic crimson, neutral/cancel
+// → dark steel. The `variant` API is unchanged, so every caller upgrades.
+const VARIANT_GRADIENTS = {
+  primary: GRADIENTS.SILVER,
+  player: GRADIENTS.SILVER,
+  opponent: GRADIENTS.GOLD,
+  // "Draw" — a cool slate-blue, distinct from the neutral/cancel steel.
+  draw: ["#243042", "#3f5774", "#243042"],
+  destructive: GRADIENTS.CRIMSON,
+  neutral: GRADIENTS.STEEL
+};
+const VARIANT_TEXT = {
+  primary: "#FFFFFF",
+  player: "#FFFFFF",
+  opponent: "#241a04", // dark text on bright gold (matches DeckDetail's gold button)
+  draw: "#dfe7f0",
+  destructive: "#ffdada",
+  neutral: "#d0d0d0"
 };
 
 // Shared confirmation dialog. Used by the reset modal in LifeCounter, the
@@ -33,7 +51,7 @@ export default function ConfirmationModal({visible = false, title = "", message 
       opacityAnim.setValue(0);
       return;
     }
-    const duration = enableAnimations ? 180 : 0;
+    const duration = animatedDuration(180, enableAnimations);
     Animated.parallel([
       Animated.timing(scaleAnim, {toValue: 1, duration, useNativeDriver: USE_NATIVE_DRIVER}),
       Animated.timing(opacityAnim, {toValue: 1, duration, useNativeDriver: USE_NATIVE_DRIVER})
@@ -52,10 +70,21 @@ export default function ConfirmationModal({visible = false, title = "", message 
           {message ? <Text style={styles.dialogMessage}>{message}</Text> : null}
           <View style={styles.dialogActions}>
             {actions.map((action, idx) => {
-              const tint = VARIANT_COLORS[action.variant] || VARIANT_COLORS.neutral;
+              // A per-action `colors` (gradient array) + `textColor` override
+              // the variant defaults — used for the team-colored win buttons.
+              const colors = action.colors || VARIANT_GRADIENTS[action.variant] || VARIANT_GRADIENTS.neutral;
+              const textColor = action.textColor || VARIANT_TEXT[action.variant] || VARIANT_TEXT.neutral;
               return (
-                <Pressable key={action.label + idx} style={[styles.dialogButton, {backgroundColor: tint}]} onPress={action.onPress} accessibilityRole="button" accessibilityLabel={action.accessibilityLabel || action.label}>
-                  <Text style={styles.dialogButtonText}>{action.label}</Text>
+                <Pressable
+                  key={(action.accessibilityLabel || action.label) + "-" + idx}
+                  style={({pressed}) => [styles.dialogButton, pressed && styles.dialogButtonPressed]}
+                  onPress={action.onPress}
+                  accessibilityRole="button"
+                  accessibilityLabel={action.accessibilityLabel || action.label}
+                >
+                  <LinearGradient colors={colors} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.dialogButtonGradient}>
+                    <Text style={[styles.dialogButtonText, {color: textColor}]}>{action.label}</Text>
+                  </LinearGradient>
                 </Pressable>
               );
             })}
@@ -111,16 +140,29 @@ const styles = StyleSheet.create({
   },
   dialogButton: {
     width: "100%",
-    paddingVertical: 12,
-    borderRadius: 6,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    minHeight: 44
+  },
+  dialogButtonPressed: {
+    opacity: 0.8
+  },
+  dialogButtonGradient: {
+    width: "100%",
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    minHeight: 46,
     alignItems: "center",
-    minHeight: 44,
     justifyContent: "center"
   },
   dialogButtonText: {
-    color: "#FFF",
     fontWeight: "bold",
-    ...textShadow({color: "black", offset: {width: 0, height: 2}, radius: 0}),
-    fontSize: 18
+    ...textShadow({color: "rgba(0,0,0,0.6)", offset: {width: 0, height: 1}, radius: 2}),
+    fontSize: 16,
+    letterSpacing: 0.5,
+    textAlign: "center",
+    lineHeight: 21
   }
 });

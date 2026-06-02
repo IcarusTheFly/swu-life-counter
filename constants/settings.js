@@ -9,6 +9,10 @@ export const DEFAULT_SETTINGS = {
   player2Color: "red",
   initialLife: 0,
   enableAnimations: true,
+  // Whether the shared space backdrop animates (drifting starfield). Default
+  // on; combined with `enableAnimations` (reduce-motion) — the backdrop moves
+  // only when BOTH are true, otherwise it renders statically.
+  animatedBackground: true,
   enableHaptics: false,
   // Id of the deck the user has marked as their default PLAYER deck, or null
   // when none is set. Populates the loadout's player1 (Player) side fallback.

@@ -28,6 +28,7 @@ test("sanitize accepts a fully valid persisted object verbatim", () => {
     player2Color: "pink",
     initialLife: 40,
     enableAnimations: false,
+    animatedBackground: false,
     enableHaptics: true,
     defaultDeckId: null,
     defaultOpponentDeckId: null,
@@ -115,6 +116,24 @@ test("enableAnimations: rejects non-boolean and falls back to default (true)", (
   assert.equal(sanitize({enableAnimations: 1}).enableAnimations, DEFAULT_SETTINGS.enableAnimations);
   assert.equal(sanitize({enableAnimations: null}).enableAnimations, DEFAULT_SETTINGS.enableAnimations);
   assert.equal(sanitize({}).enableAnimations, DEFAULT_SETTINGS.enableAnimations);
+});
+
+test("animatedBackground: accepts true and false", () => {
+  assert.equal(sanitize({animatedBackground: true}).animatedBackground, true);
+  assert.equal(sanitize({animatedBackground: false}).animatedBackground, false);
+});
+
+test("animatedBackground: defaults to true and is on by default", () => {
+  // Fresh install / legacy blob (no key) → enabled.
+  assert.equal(DEFAULT_SETTINGS.animatedBackground, true);
+  assert.equal(sanitize({}).animatedBackground, true);
+  assert.equal(sanitize({player1Color: "red"}).animatedBackground, true);
+});
+
+test("animatedBackground: coerces non-boolean to the default (true)", () => {
+  assert.equal(sanitize({animatedBackground: "no"}).animatedBackground, DEFAULT_SETTINGS.animatedBackground);
+  assert.equal(sanitize({animatedBackground: 0}).animatedBackground, DEFAULT_SETTINGS.animatedBackground);
+  assert.equal(sanitize({animatedBackground: null}).animatedBackground, DEFAULT_SETTINGS.animatedBackground);
 });
 
 test("enableHaptics: accepts true and false", () => {

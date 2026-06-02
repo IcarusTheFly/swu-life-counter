@@ -1,9 +1,11 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Animated, Platform, Pressable, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
-import ResetIcon from "../icons/ResetIcon";
+import MenuIcon from "../icons/MenuIcon";
 import EndGameIcon from "../icons/EndGameIcon";
 import {textShadow} from "../utils/textShadow";
+import {GRADIENTS} from "../constants/theme";
+import {animatedDuration} from "../utils/animation";
 
 // Mirrors PlayerView's gate — react-native-web has no native animated module.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -48,7 +50,7 @@ export default function Divider({
 
   useEffect(() => {
     if (!enabled) return;
-    const duration = enableAnimations ? 220 : 0;
+    const duration = animatedDuration(220, enableAnimations);
     Animated.parallel([
       Animated.timing(endGameOpacity, {toValue: 1, duration, useNativeDriver: USE_NATIVE_DRIVER}),
       Animated.timing(endGameScale, {toValue: 1, duration, useNativeDriver: USE_NATIVE_DRIVER})
@@ -85,12 +87,12 @@ export default function Divider({
           accessibilityLabel="Open menu: reset life or return home"
         >
           <LinearGradient
-            colors={["#3c3c3c", "#6e6e6e", "#a1a1a1", "#6e6e6e", "#3c3c3c"]}
+            colors={GRADIENTS.SILVER}
             style={styles.circleButton}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
           >
-            <ResetIcon stroke="white" />
+            <MenuIcon stroke="white" />
           </LinearGradient>
         </Pressable>
 
@@ -109,7 +111,7 @@ export default function Divider({
               accessibilityState={{disabled: false}}
             >
               <LinearGradient
-                colors={["#3c3c3c", "#6e6e6e", "#a1a1a1", "#6e6e6e", "#3c3c3c"]}
+                colors={GRADIENTS.SILVER}
                 style={styles.circleButton}
                 start={{x: 1, y: 0}}
                 end={{x: 0, y: 1}}
@@ -129,7 +131,7 @@ export default function Divider({
             style={styles.endGameDisabled}
           >
             <LinearGradient
-              colors={["#3c3c3c", "#6e6e6e", "#a1a1a1", "#6e6e6e", "#3c3c3c"]}
+              colors={GRADIENTS.SILVER}
               style={styles.circleButton}
               start={{x: 1, y: 0}}
               end={{x: 0, y: 1}}

@@ -1,106 +1,124 @@
-import React, {useRef} from "react";
-import {Platform, View, StyleSheet, Pressable, Animated, Image} from "react-native";
+import React, {useEffect, useMemo, useRef} from "react";
+import {Animated, Platform, Pressable, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
+import {textShadow} from "../utils/textShadow";
+import {SPACE_BUBBLE_GRADIENT} from "../constants/theme";
+import {animatedDuration} from "../utils/animation";
 
-// react-native-web logs a "native animated module is missing" warning whenever
-// useNativeDriver is true. Use the native driver only on real native platforms.
+// react-native-web has no native animated module; the project's standard gate.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
-export default function InitiativeView({hasInitiative, claimInitiative, initiativeImage, isLandscape = false, enableAnimations = true}) {
-  const borderShineAnim = useRef(new Animated.Value(0)).current;
-  // When animations are off, run the same sequence with duration 0 so the
-  // scale/opacity transition is instantaneous (matches PlayerView's pattern).
-  const shineDuration = enableAnimations ? 250 : 0;
-  const triggerBorderAnimation = () => {
-    Animated.sequence([
-      Animated.timing(borderShineAnim, {
-        toValue: 1,
-        duration: shineDuration,
-        useNativeDriver: USE_NATIVE_DRIVER
-      }),
-      Animated.timing(borderShineAnim, {
-        toValue: 0,
-        duration: shineDuration,
-        useNativeDriver: USE_NATIVE_DRIVER
-      })
-    ]).start();
-  };
+// Initiative control (modernize-ui redesign, v9). A small "closed" bubble
+// spelling "INITIATIVE", with its own deep-space (indigo/violet) gradient fill.
+//
+// PLACEMENT: the bubble is centered within the RIGHT HALF of the player's area
+// — i.e. its horizontal center sits at ~75% of the width. That keeps it clear
+// of the bottom-LEFT deck badge AND well away from the screen edge (so the pop
+// never lets the border touch the edge), at any size. (The opponent half's
+// 180° rotation flips this consistently, so each player sees it the same way.)
+//
+// CLICK ANIMATION: when a side BECOMES claimed, the bubble grows oversize
+// slowly then settles back over ~1.1s (scale 1 → 1.25 → 1). It's driven by the
+// claim state-transition (survives the re-render) and is **gated on the
+// "Enable animations" toggle** — when off the durations are 0 so the bubble
+// just becomes claimed instantly, with no grow/settle.
+//
+// States: unclaimed = dimmed, grey text, faint border; claimed = the claiming
+// side's TEAM COLOR for the text + the (single) border.
+export default function InitiativeView({hasInitiative, claimInitiative, teamColor, isLandscape = false, enableAnimations = true}) {
+  const pop = useRef(new Animated.Value(0)).current;
+  const scale = useMemo(() => pop.interpolate({inputRange: [0, 1], outputRange: [1, 1.25]}), [pop]);
+  const wasClaimed = useRef(hasInitiative);
+
+  useEffect(() => {
+    if (hasInitiative && !wasClaimed.current) {
+      pop.stopAnimation();
+      pop.setValue(0);
+      Animated.sequence([
+        Animated.timing(pop, {toValue: 1, duration: animatedDuration(600, enableAnimations), useNativeDriver: USE_NATIVE_DRIVER}),
+        Animated.timing(pop, {toValue: 0, duration: animatedDuration(500, enableAnimations), useNativeDriver: USE_NATIVE_DRIVER})
+      ]).start();
+    }
+    wasClaimed.current = hasInitiative;
+  }, [hasInitiative, enableAnimations, pop]);
+
+  const accent = (teamColor && teamColor.base) || "#cfcfd6";
 
   return (
-    <Pressable
-      style={[styles.initiativeArea, isLandscape ? styles.initiativeAreaLandscape : styles.initiativeAreaPortrait, hasInitiative && styles.initiativeTaken]}
-      onPress={() => {
-        if (!hasInitiative) {
-          claimInitiative();
-          triggerBorderAnimation();
-        }
-      }}
-    >
-      <Animated.View
-        style={[
-          styles.initiativeContainer,
-          {
-            transform: [
-              {
-                scale: borderShineAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 1.1]
-                })
-              }
-            ],
-            opacity: borderShineAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 0.8]
-            })
-          }
-        ]}
-      >
-        <LinearGradient colors={["#a1a1a1", "#6e6e6e", "#a1a1a1"]} style={styles.initiativeBorder}>
-          <View style={styles.initiativeIconWrapper}>
-            <Image source={initiativeImage} resizeMode={isLandscape ? "center" : "cover"} style={styles.initiativeIcon} />
-          </View>
-        </LinearGradient>
-      </Animated.View>
-    </Pressable>
+    <View style={[styles.area, isLandscape ? styles.areaLandscape : styles.areaPortrait]}>
+      {/* The bubble lives centered within the right 50% of the band. */}
+      <View style={styles.rightHalf}>
+        <Pressable
+          onPress={() => {
+            if (!hasInitiative) claimInitiative();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={hasInitiative ? "You have initiative" : "Claim initiative"}
+          accessibilityState={{selected: hasInitiative}}
+        >
+          <Animated.View style={[{transform: [{scale}]}, !hasInitiative && styles.dim]}>
+            <LinearGradient
+              colors={SPACE_BUBBLE_GRADIENT}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={[styles.pill, {borderColor: hasInitiative ? accent : "rgba(255,255,255,0.3)"}]}
+            >
+              <Text
+                style={[styles.label, isLandscape && styles.labelLandscape, {color: hasInitiative ? accent : "#b9b9c4"}]}
+                numberOfLines={1}
+              >
+                INITIATIVE
+              </Text>
+            </LinearGradient>
+          </Animated.View>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  initiativeArea: {
-    justifyContent: "center",
-    alignItems: "center",
-    opacity: 0.2
+  // Full-width band; its single child (the right half) is pushed to the right.
+  area: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center"
   },
-  initiativeAreaPortrait: {
+  areaPortrait: {
     height: "20%"
   },
-  initiativeAreaLandscape: {
+  areaLandscape: {
     height: "30%"
   },
-  initiativeTaken: {
-    opacity: 1
+  // The right 50% of the band — the bubble is centered inside it, so the
+  // bubble's horizontal center lands at ~75% of the player area's width.
+  rightHalf: {
+    width: "50%",
+    alignItems: "center",
+    justifyContent: "center"
   },
-  initiativeContainer: {
-    width: "60%",
-    height: "60%",
-    borderRadius: 9999,
+  dim: {
+    opacity: 0.5
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    minHeight: 28,
     overflow: "hidden"
   },
-  initiativeBorder: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 9999,
-    padding: 4,
-    overflow: "hidden"
+  label: {
+    fontFamily: "FiraCode_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.5,
+    ...textShadow({color: "rgba(0,0,0,0.7)", offset: {width: 0, height: 1}, radius: 3})
   },
-  initiativeIconWrapper: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 9999,
-    overflow: "hidden"
-  },
-  initiativeIcon: {
-    width: "100%",
-    height: "100%"
+  labelLandscape: {
+    fontSize: 10,
+    letterSpacing: 1
   }
 });

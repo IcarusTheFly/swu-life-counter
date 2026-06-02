@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {BackHandler, Platform, StyleSheet, View, useWindowDimensions} from "react-native";
+import {BackHandler, Platform, StyleSheet, Text, View, useWindowDimensions} from "react-native";
 import PlayerView from "./PlayerView";
 import Divider from "./Divider";
 import ConfirmationModal from "./ConfirmationModal";
@@ -9,6 +9,7 @@ import {useSettings} from "../context/SettingsContext";
 import {useDecks} from "../context/DecksContext";
 import {TEAM_COLORS} from "../constants/teamColors";
 import {RANDOM_DECK_ID} from "../constants/decks";
+import {gradientFromBase, textOnColor} from "../constants/theme";
 
 const PLAYER1_ID = 1;
 const PLAYER2_ID = 2;
@@ -22,6 +23,13 @@ const isRealDeck = (id) => id !== null && id !== RANDOM_DECK_ID;
 // as Random so the recorded id is always a string (the stats layer ignores
 // `__random__`).
 const normalizeSide = (id) => (id === RANDOM_DECK_ID || !isRealDeck(id) ? RANDOM_DECK_ID : id);
+
+// Cap a deck name in the compact outcome-prompt buttons so a long name wraps to
+// at most ~2 lines instead of blowing out the dialog layout.
+const shortName = (name) => {
+  const s = String(name || "");
+  return s.length > 22 ? s.slice(0, 21).trimEnd() + "…" : s;
+};
 
 export default function LifeCounter({onReturnHome}) {
   const {width, height} = useWindowDimensions();
@@ -148,15 +156,46 @@ export default function LifeCounter({onReturnHome}) {
   // Outcome modal actions — labels reflect the CURRENT loadout (resolved deck
   // name, or "Random" when that side is the sentinel).
   const outcomeActions = useMemo(() => {
-    const p1Name = player1Deck ? player1Deck.name : "Random";
-    const p2Name = player2Deck ? player2Deck.name : "Random";
+    // Tint each win button with that side's TEAM color (player color for "You
+    // won", opponent color for "Opponent won"); text color picked for contrast.
+    const p1Base = startConfig.player1Color.base;
+    const p2Base = startConfig.player2Color.base;
+    // Build a win-button label. A Random side (no real deck) renders the word
+    // "Random" in ITALIC, matching the in-game badge + Game History styling.
+    // (A plain string for real decks; a node only when Random.)
+    const winLabel = (prefix, deck) =>
+      deck ? (
+        `${prefix} · ${shortName(deck.name)}`
+      ) : (
+        <>
+          {`${prefix} · `}
+          <Text style={styles.outcomeRandom}>Random</Text>
+        </>
+      );
     return [
-      {label: `${p1Name} won`, variant: "primary", onPress: () => finishWithOutcome("player_win")},
-      {label: `${p2Name} won`, variant: "primary", onPress: () => finishWithOutcome("opponent_win")},
-      {label: "Draw", variant: "neutral", onPress: () => finishWithOutcome("draw")},
-      {label: "Don't save", variant: "destructive", onPress: handleDontSave}
+      // Opponent FIRST (top button) so the prompt mirrors the table layout: the
+      // opponent's half is the TOP of the screen, the player's is the bottom.
+      {
+        label: winLabel("Opponent won", player2Deck),
+        accessibilityLabel: `Opponent won · ${player2Deck ? player2Deck.name : "Random"}`,
+        colors: gradientFromBase(p2Base),
+        textColor: textOnColor(p2Base),
+        onPress: () => finishWithOutcome("opponent_win")
+      },
+      {
+        label: winLabel("You won", player1Deck),
+        accessibilityLabel: `You won · ${player1Deck ? player1Deck.name : "Random"}`,
+        colors: gradientFromBase(p1Base),
+        textColor: textOnColor(p1Base),
+        onPress: () => finishWithOutcome("player_win")
+      },
+      // Draw gets its own distinct (slate-blue) tone — not the cancel steel.
+      {label: "Draw", variant: "draw", onPress: () => finishWithOutcome("draw")},
+      // Backing out of the prompt is a plain cancel (not a destructive action) —
+      // matches the hamburger reset dialog's neutral "Cancel".
+      {label: "Cancel", variant: "neutral", onPress: handleDontSave}
     ];
-  }, [player1Deck, player2Deck, finishWithOutcome, handleDontSave]);
+  }, [player1Deck, player2Deck, finishWithOutcome, handleDontSave, startConfig]);
 
   // Deck-picker options: every deck + a "Random" row (mirrors Home).
   const pickerOptions = useMemo(
@@ -186,17 +225,17 @@ export default function LifeCounter({onReturnHome}) {
         playerLife={player1Life}
         setPlayerLife={setPlayer1Life}
         claimInitiative={() => setInitiativePlayer(PLAYER1_ID)}
-        backgroundImage={isLandscape ? startConfig.player1Color.bg.landscape : startConfig.player1Color.bg.portrait}
-        initiativeImage={require("../assets/initiative-icon.png")}
+        linesImage={isLandscape ? startConfig.player2Color.lines.landscape : startConfig.player2Color.lines.portrait}
         isOpponent={true}
         isLandscape={isLandscape}
-        teamColor={startConfig.player1Color}
+        teamColor={startConfig.player2Color}
         enableAnimations={startConfig.enableAnimations}
         enableHaptics={startConfig.enableHaptics}
-        // The TOP (rotated) half is the OPPONENT's physical position — its
-        // badge surfaces the opponent's deck (player2DeckId). The loadout
-        // shape uses `player1` to mean the PLAYER side; the rendering swap
-        // here reconciles those two conventions per design.md Decision 11.
+        // The TOP (rotated) half is the OPPONENT's physical position — its badge
+        // surfaces the opponent's deck (player2DeckId) AND it is tinted with the
+        // OPPONENT's team color (player2Color). Both the deck AND the color now
+        // follow the physical side, so they agree (and match the outcome
+        // prompt's "Opponent won" button).
         deckName={player2Deck ? player2Deck.name : null}
         deckAspects={player2Deck ? player2Deck.aspects : []}
         isRandom={gameLoadout.player2DeckId === RANDOM_DECK_ID}
@@ -248,14 +287,15 @@ export default function LifeCounter({onReturnHome}) {
         playerLife={player2Life}
         setPlayerLife={setPlayer2Life}
         claimInitiative={() => setInitiativePlayer(PLAYER2_ID)}
-        backgroundImage={isLandscape ? startConfig.player2Color.bg.landscape : startConfig.player2Color.bg.portrait}
-        initiativeImage={require("../assets/initiative-icon.png")}
+        linesImage={isLandscape ? startConfig.player1Color.lines.landscape : startConfig.player1Color.lines.portrait}
         isLandscape={isLandscape}
-        teamColor={startConfig.player2Color}
+        teamColor={startConfig.player1Color}
         enableAnimations={startConfig.enableAnimations}
         enableHaptics={startConfig.enableHaptics}
         // The BOTTOM (non-rotated) half is the PLAYER's physical position —
-        // surface the player's deck (player1DeckId).
+        // surface the player's deck (player1DeckId) AND tint it with the
+        // PLAYER's team color (player1Color), so deck + color agree (and match
+        // the outcome prompt's "You won" button).
         deckName={player1Deck ? player1Deck.name : null}
         deckAspects={player1Deck ? player1Deck.aspects : []}
         isRandom={gameLoadout.player1DeckId === RANDOM_DECK_ID}
@@ -269,5 +309,10 @@ export default function LifeCounter({onReturnHome}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1
+  },
+  // Italic "Random" inside the outcome-prompt win buttons (inherits the
+  // button's bold/size/color from the dialog; only adds the slant).
+  outcomeRandom: {
+    fontStyle: "italic"
   }
 });

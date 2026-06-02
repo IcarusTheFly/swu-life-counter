@@ -5,6 +5,7 @@ import InitiativeView from "./InitiativeView";
 import {canUpdateLife} from "./lifeMath";
 import {textShadow} from "../utils/textShadow";
 import {ASPECTS} from "../constants/decks";
+import {animatedDuration} from "../utils/animation";
 
 // react-native-web has no native animated module; only request native driver on real platforms.
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -16,8 +17,10 @@ const HAPTICS_AVAILABLE = Platform.OS !== "web";
 export default function PlayerView({
   hasInitiative,
   claimInitiative,
-  backgroundImage,
-  initiativeImage,
+  // Transparent, team-colored curved-line overlay for this half. The shared
+  // animated space (rendered globally by ScreenLayout) shows through the
+  // transparent areas, so the lines appear only in-game, on top of the space.
+  linesImage,
   playerLife,
   setPlayerLife,
   isOpponent = false,
@@ -48,8 +51,8 @@ export default function PlayerView({
   // When animations are off, run the same Animated.timing calls but with
   // duration: 0 so the overlay snaps in/out — feedback is preserved, motion
   // is removed (see design.md Decision 5).
-  const fadeInDuration = enableAnimations ? 300 : 0;
-  const fadeOutDuration = enableAnimations ? 500 : 0;
+  const fadeInDuration = animatedDuration(300, enableAnimations);
+  const fadeOutDuration = animatedDuration(500, enableAnimations);
 
   const updateLife = (change) => {
     if (canUpdateLife(playerLife, change)) {
@@ -101,7 +104,7 @@ export default function PlayerView({
   const renderDeckBadge = isRandom || deckName !== null;
 
   return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.player, isOpponent && styles.opponent]}>
+    <ImageBackground source={linesImage} resizeMode="cover" style={[styles.player, isOpponent && styles.opponent]}>
       {renderDeckBadge ? (
         <DeckBadge
           deckName={deckName}
@@ -145,7 +148,7 @@ export default function PlayerView({
 
       <View style={styles.divider} />
 
-      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} initiativeImage={initiativeImage} isLandscape={isLandscape} enableAnimations={enableAnimations} />
+      <InitiativeView hasInitiative={hasInitiative} claimInitiative={claimInitiative} teamColor={teamColor} isLandscape={isLandscape} enableAnimations={enableAnimations} />
     </ImageBackground>
   );
 }

@@ -108,6 +108,7 @@ export default function GameHistoryScreen({deckId, onBack}) {
         {addFormVisible && (
           <AddGameForm
             deckId={deckId}
+            deckName={deck.name}
             decks={decks}
             settings={settings}
             onSave={handleAddGame}
@@ -171,8 +172,9 @@ export default function GameHistoryScreen({deckId, onBack}) {
 // ─── Add-game inline form ────────────────────────────────────────────────────
 
 // Renders a compact card for adding a single new game. This deck is always the
-// "player" side; the user picks the opponent + W/L/D from their perspective.
-function AddGameForm({deckId, decks, settings, onSave, onCancel}) {
+// "player" side (shown as a "YOU" chip); the user picks the opponent + a W/L/D
+// result read from THIS deck's perspective.
+function AddGameForm({deckId, deckName, decks, settings, onSave, onCancel}) {
   const [opponentId, setOpponentId] = useState(null);
   const [result, setResult] = useState("W");
   const [event, setEvent] = useState("");
@@ -206,8 +208,15 @@ function AddGameForm({deckId, decks, settings, onSave, onCancel}) {
     <View style={styles.addFormCard}>
       <Text style={styles.addFormTitle}>ADD GAME</Text>
 
-      {/* Row 1: opponent picker + outcome chips side-by-side */}
-      <View style={styles.addFormRow}>
+      {/* Matchup: YOU (this deck) vs the opponent you pick. */}
+      <View style={styles.matchupRow}>
+        <View style={styles.youChip}>
+          <Text style={styles.youTag}>YOU</Text>
+          <Text style={styles.youName} numberOfLines={1} ellipsizeMode="tail">
+            {deckName}
+          </Text>
+        </View>
+        <Text style={styles.vsText}>vs</Text>
         <Pressable
           onPress={() => setPickerOpen(true)}
           style={({pressed}) => [styles.addOpponentPill, pressed && styles.pressedSubtle]}
@@ -222,7 +231,13 @@ function AddGameForm({deckId, decks, settings, onSave, onCancel}) {
           </Text>
           <Text style={styles.addChevron}>▾</Text>
         </Pressable>
+      </View>
 
+      {/* Result — read from THIS deck's perspective (W = you won). */}
+      <View style={styles.resultRow}>
+        <Text style={styles.resultLabel} numberOfLines={1}>
+          Result for <Text style={styles.resultDeck}>{deckName}</Text>
+        </Text>
         <OutcomeChips value={result} onChange={setResult} />
       </View>
 
@@ -515,7 +530,7 @@ function formatDate(ms) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000"
+    backgroundColor: "transparent"
   },
   header: {
     flexDirection: "row",
@@ -640,6 +655,61 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10
+  },
+  matchupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  youChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#101014",
+    borderWidth: 1,
+    borderColor: "#2a2a2e",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    minHeight: 40,
+    maxWidth: "46%"
+  },
+  youTag: {
+    color: "#74e08c",
+    fontFamily: "FiraCode_700Bold",
+    fontSize: 9,
+    letterSpacing: 1.5,
+    flexShrink: 0
+  },
+  youName: {
+    color: "#FFFFFF",
+    fontFamily: "FiraCode_700Bold",
+    fontSize: 13,
+    letterSpacing: 0.3,
+    flexShrink: 1
+  },
+  vsText: {
+    color: "#777",
+    fontFamily: "FiraCode_400Regular",
+    fontSize: 12,
+    flexShrink: 0
+  },
+  resultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  resultLabel: {
+    color: "#888",
+    fontFamily: "FiraCode_400Regular",
+    fontSize: 12,
+    letterSpacing: 0.3,
+    flexShrink: 1
+  },
+  resultDeck: {
+    color: "#CCCCCC",
+    fontFamily: "FiraCode_700Bold"
   },
   addOpponentPill: {
     flex: 1,

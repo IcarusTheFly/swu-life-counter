@@ -302,7 +302,7 @@ function ActionButton({label, onPress, variant = "primary", disabled = false}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000"
+    backgroundColor: "transparent"
   },
   header: {
     flexDirection: "row",

@@ -89,12 +89,20 @@ export default function SettingsScreen({onBack}) {
         {/* ANIMATIONS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>ANIMATIONS</Text>
-          <SettingToggle
-            label="Enable animations"
-            description="Life-change overlay and initiative shine"
-            value={settings.enableAnimations}
-            onValueChange={(v) => updateSettings({enableAnimations: v})}
-          />
+          <View style={styles.toggleGroup}>
+            <SettingToggle
+              label="Enable animations"
+              description="Overlays, dialogs, the initiative pop, and the background drift"
+              value={settings.enableAnimations}
+              onValueChange={(v) => updateSettings({enableAnimations: v})}
+            />
+            <SettingToggle
+              label="Animated background"
+              description="Drifting starfield behind every screen"
+              value={settings.animatedBackground}
+              onValueChange={(v) => updateSettings({animatedBackground: v})}
+            />
+          </View>
         </View>
 
         {/* HAPTIC FEEDBACK — mobile only */}
@@ -260,7 +268,7 @@ function SettingToggle({label, description, value, onValueChange}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000"
+    backgroundColor: "transparent"
   },
   header: {
     flexDirection: "row",
@@ -293,6 +301,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 28
+  },
+  toggleGroup: {
+    gap: 10
   },
   sectionTitle: {
     color: "#888",

@@ -112,6 +112,9 @@ export function sanitize(raw) {
     if (TEAM_COLOR_KEYS.includes(raw.player2Color)) next.player2Color = raw.player2Color;
     next.initialLife = resolveInitialLife(raw);
     if (typeof raw.enableAnimations === "boolean") next.enableAnimations = raw.enableAnimations;
+    // Animated background: accept a real boolean; anything else (missing,
+    // legacy blob, garbage) keeps the default (`true`) from the spread above.
+    if (typeof raw.animatedBackground === "boolean") next.animatedBackground = raw.animatedBackground;
     if (typeof raw.enableHaptics === "boolean") next.enableHaptics = raw.enableHaptics;
     next.defaultDeckId = resolveDefaultDeckId(raw);
     next.defaultOpponentDeckId = resolveDefaultOpponentDeckId(raw);
