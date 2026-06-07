@@ -9,9 +9,24 @@ import DeckDetailScreen from "./components/DeckDetailScreen";
 import DeckEditScreen from "./components/DeckEditScreen";
 import BulkAddGamesScreen from "./components/BulkAddGamesScreen";
 import GameHistoryScreen from "./components/GameHistoryScreen";
+import BottomTabBar from "./components/BottomTabBar";
+import {View} from "react-native";
 import {SettingsProvider, useSettings} from "./context/SettingsContext";
 import {DecksProvider, useDecks} from "./context/DecksContext";
 import {RANDOM_DECK_ID} from "./constants/decks";
+
+// Which browse screens show the bottom tab bar (hidden in-game + in focused
+// edit flows), and which tab is "active" for each screen.
+const TAB_BAR_SCREENS = new Set(["home", "decks", "deck-detail", "game-history", "settings"]);
+const TAB_FOR_SCREEN = {
+  home: "home",
+  decks: "decks",
+  "deck-detail": "decks",
+  "deck-edit": "decks",
+  "bulk-add-games": "decks",
+  "game-history": "decks",
+  settings: "settings"
+};
 
 // The screen state machine + cross-validation effect live inside
 // `<AppContent>` because they read from both providers. SettingsProvider
@@ -38,6 +53,8 @@ function AppContent() {
   const goGame = useCallback(() => setScreen("game"), []);
   const goSettings = useCallback(() => setScreen("settings"), []);
   const goDecks = useCallback(() => setScreen("decks"), []);
+  // Bottom-tab navigation drives the same screen state (no router).
+  const navigateTab = useCallback((key) => setScreen(key), []);
 
   const openDeckDetail = useCallback((id) => {
     setActiveDeckId(id);
@@ -111,14 +128,19 @@ function AppContent() {
     }
   }, [decks, settings.activeLoadout, settings.defaultDeckId, settings.defaultOpponentDeckId, updateSettings]);
 
+  const showTabBar = TAB_BAR_SCREENS.has(screen);
+  const activeTab = TAB_FOR_SCREEN[screen] || "home";
+
   return (
     <ScreenLayout>
+      <View style={{flex: 1}}>
       {screen === "home" && (
         <HomeScreen
           onStartGame={goGame}
           onOpenSettings={goSettings}
           onOpenDecks={goDecks}
           onOpenDeckEdit={openDeckEdit}
+          onOpenDeckDetail={openDeckDetail}
         />
       )}
       {screen === "settings" && <SettingsScreen onBack={goHome} />}
@@ -150,6 +172,8 @@ function AppContent() {
           onSaved={closeBulkAddGames}
         />
       )}
+      </View>
+      {showTabBar && <BottomTabBar active={activeTab} onNavigate={navigateTab} />}
     </ScreenLayout>
   );
 }

@@ -365,8 +365,14 @@ function GameRow({game, opponentName, onUpdateGame, onRequestDelete}) {
   };
 
   const dateLabel = formatDate(game.playedAt);
-  const deleteLabel = `the ${RESULT_WORD[game.result] || "game"} vs ${opponentName}${
-    game.event ? ` (${game.event})` : ""
+  // Truncate the (user-controlled) opponent name + event so the delete-confirm
+  // message can never overflow the dialog when a deck name is very long.
+  const trunc = (s, n) => {
+    const str = String(s || "");
+    return str.length > n ? str.slice(0, n - 1) + "…" : str;
+  };
+  const deleteLabel = `the ${RESULT_WORD[game.result] || "game"} vs ${trunc(opponentName, 22)}${
+    game.event ? ` (${trunc(game.event, 18)})` : ""
   }${dateLabel ? ` on ${dateLabel}` : ""}`;
 
   if (editing) {

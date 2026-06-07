@@ -127,6 +127,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#EEE",
     textAlign: "center",
+    // Span the dialog's inner width so long messages wrap within it instead of
+    // pushing past the edges.
+    alignSelf: "stretch",
     marginTop: -8,
     marginBottom: 16,
     fontFamily: "FiraCode_400Regular",

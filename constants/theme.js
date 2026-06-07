@@ -19,8 +19,9 @@ export const GRADIENTS = {
   STEEL: ["#2a2a2a", "#3a3a3a", "#2a2a2a"]
 };
 
-// Deep-space vertical gradient behind every screen (top → bottom).
-export const SPACE_GRADIENT = ["#04050b", "#0a0c18", "#0e1226", "#070912"];
+// Deep-space vertical gradient behind every screen (top → bottom). Neutral
+// near-black greys — intentionally NO blue/indigo cast (redesign-home-and-visuals).
+export const SPACE_GRADIENT = ["#050505", "#0b0b0b", "#0e0e0e", "#060606"];
 
 // A DIFFERENT, richer deep-space gradient used as the fill of the in-game
 // "INITIATIVE" bubble (a deep indigo/violet nebula) so the bubble reads as its
@@ -29,7 +30,7 @@ export const SPACE_BUBBLE_GRADIENT = ["#0b0920", "#1b1248", "#0b0920"];
 
 // A safe solid fallback that matches the darkest space tone — used as the base
 // background color so there's never a white flash before the gradient paints.
-export const SPACE_BASE = "#05060d";
+export const SPACE_BASE = "#050505";
 
 export const RADIUS = {sm: 8, md: 10, lg: 14, pill: 999};
 export const SPACING = {xs: 4, sm: 8, md: 12, lg: 16, xl: 20};

@@ -1,10 +1,4 @@
-# home-screen Specification
-
-## Purpose
-
-The `home-screen` capability defines the app's top-level entry screen and the navigation it exposes to the rest of the app (game, settings, and exit). It governs what is shown on launch, the order and visibility of menu options across platforms, how each option behaves, and how the user returns to Home from other screens (including the Android hardware back button).
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Home screen is the app entry point
 The app SHALL display a Home screen on launch (after font and settings load), instead of mounting the life counter directly.
@@ -57,29 +51,6 @@ Starting a test game — via **Play Test Game** (Quick Test) or a deck's **Test*
 - **GIVEN** persisted settings: lifeMode `up`
 - **WHEN** the user taps "Play Test Game"
 - **THEN** the life counter is shown with both players' values starting at 0
-
-### Requirement: User can return to Home from the life counter
-While in the life counter, the user SHALL be able to return to the Home screen. This is exposed through the existing reset-confirmation modal (opened via the reset icon on the divider), which offers a **Return to Home** action alongside **Reset Life** and **Cancel**.
-
-#### Scenario: Return to Home from the in-game modal
-- **GIVEN** the user is in an active game with non-default life totals
-- **WHEN** the user taps the reset icon on the divider
-- **AND** the user taps "Return to Home"
-- **THEN** the Home screen is shown
-- **AND** the in-game state is discarded (no resume)
-
-#### Scenario: Cancel keeps the user in the game
-- **GIVEN** the user is in an active game and the reset modal is open
-- **WHEN** the user taps "Cancel"
-- **THEN** the modal closes
-- **AND** life totals are unchanged
-
-#### Scenario: Reset Life keeps the user in the game and resets totals
-- **GIVEN** the user is in an active game with non-default life totals
-- **AND** the game was started with startingLife 30 in Count Down mode
-- **WHEN** the user taps the reset icon and then "Reset Life"
-- **THEN** both players' life totals return to 30
-- **AND** the user remains on the life counter screen
 
 ### Requirement: Android hardware back button returns to Home from Game and Settings
 On Android, the hardware back button SHALL behave consistently with the bottom tab bar: from a non-Home tab (Decks or Settings) or one of their sub-screens, back SHALL return to the **Home** tab; from a **game**, back SHALL return to Home and discard the in-game state; from the **Home** tab, back SHALL exit the app (default Android behavior — not overridden).
@@ -136,6 +107,8 @@ The Home dashboard SHALL lay out its content (top-performer feature, top-decks l
 - **WHEN** the Home screen renders
 - **THEN** the dashboard sections are shown in a scrollable vertical stack above the tab bar
 
+## ADDED Requirements
+
 ### Requirement: Home shows an at-a-glance stats overview
 The Home screen SHALL display a compact, read-only stat strip beneath the brand summarizing the user's tracked play — at minimum the **number of decks** and the **number of recorded games** — computed from the persisted decks/games. It SHALL NOT present a single global "win rate" across all decks: an aggregate win percentage over many different decks and matchups is not a meaningful figure. Relative performance is expressed instead by the featured **top-performer** deck and the **ranked** top-decks list. When there is no recorded data yet, the strip SHALL show a friendly call-to-action instead of zeroes. The strip is informational only and SHALL NOT alter recorded data.
 
@@ -179,3 +152,13 @@ The Home dashboard SHALL feature the user's **top-performing deck** — the deck
 - **GIVEN** no deck has reached the minimum ranked games
 - **WHEN** the Home screen renders
 - **THEN** Home features the most-played deck (or a create-deck CTA when there are no decks) instead of a misleading 100%-from-one-game deck
+
+## REMOVED Requirements
+
+### Requirement: Settings option opens the Settings screen
+**Reason**: Settings is now reached via the bottom Settings tab (the new `navigation` capability), not a Home control.
+**Migration**: Tap the Settings tab in the bottom tab bar.
+
+### Requirement: Exit option closes the app where the platform permits
+**Reason**: Exit moved off Home into the Settings screen.
+**Migration**: Use the Exit control in Settings (see the `settings` capability).

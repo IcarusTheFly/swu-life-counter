@@ -26,9 +26,9 @@ const USE_NATIVE_DRIVER = Platform.OS !== "web";
 // number of static leaf Views, NOT the animation — there are still only 3
 // drivers (one per parallax layer), so motion stays at 3 native-driven loops.
 const LAYERS = [
-  {count: 180, size: [1, 2], opacity: [0.18, 0.5], drift: 6, breathe: 0.08, duration: 9000},
-  {count: 120, size: [1.5, 2.5], opacity: [0.3, 0.7], drift: 10, breathe: 0.12, duration: 13000},
-  {count: 70, size: [2, 3.5], opacity: [0.5, 1], drift: 16, breathe: 0.16, duration: 17000}
+  {count: 270, size: [1, 2], opacity: [0.18, 0.5], drift: 6, breathe: 0.08, duration: 9000},
+  {count: 180, size: [1.5, 2.5], opacity: [0.3, 0.7], drift: 10, breathe: 0.12, duration: 13000},
+  {count: 110, size: [2, 3.5], opacity: [0.5, 1], drift: 16, breathe: 0.16, duration: 17000}
 ];
 
 function seedStars(count, sizeRange, opacityRange) {

@@ -362,3 +362,71 @@ export function gamesGroupedByOpponent(deckId, games, decks) {
   );
   return rows;
 }
+
+// ── Global (cross-deck) stats for the Home stat strip ────────────────────────
+// A single at-a-glance summary across the WHOLE library: how many decks, how
+// many recorded games, and the overall win% from the player's (your) side.
+//
+// Unlike `statsForDeck` (symmetric, per-deck, counts a mirror twice), this is a
+// flat tally over the raw game log from the PLAYER perspective — each game is
+// counted ONCE: `player_win` ⇒ win, `opponent_win` ⇒ loss, `draw` ⇒ draw.
+// (player1 / `playerDeckId` is "you" — the loadout convention.) Malformed
+// records and unknown outcomes are ignored, so `gameCount` reflects only the
+// valid games that contribute to the percentage.
+//
+// Returns `{deckCount, gameCount, winPct}`. `winPct` is a one-decimal number,
+// or `null` when there are no games (the UI shows a call-to-action, not "0%").
+// Garbage input (non-arrays, nulls, junk records) is handled safely — this
+// never throws and never returns NaN.
+export function globalStats(decks, games) {
+  const deckCount = Array.isArray(decks)
+    ? decks.filter((d) => d && typeof d === "object").length
+    : 0;
+  let wins = 0;
+  let losses = 0;
+  let draws = 0;
+  if (Array.isArray(games)) {
+    for (const game of games) {
+      if (!game || typeof game !== "object") continue;
+      if (game.outcome === "player_win") wins += 1;
+      else if (game.outcome === "opponent_win") losses += 1;
+      else if (game.outcome === "draw") draws += 1;
+      // unknown / missing outcome → ignored (not a countable game)
+    }
+  }
+  const gameCount = wins + losses + draws;
+  return {deckCount, gameCount, winPct: computeWinPct(wins, gameCount)};
+}
+
+// ── Deck ranking for the Home dashboard ─────────────────────────────────────
+// Minimum recorded games for a deck to be eligible for the "top performer"
+// ranking — so a 1-0 deck can't out-rank a deck with a real sample.
+export const MIN_RANKED_GAMES = 5;
+
+// Rank decks for the Home dashboard. Returns `{top, rest, topQualifies}`:
+//   - `top`          the featured deck (or null when there are no decks)
+//   - `rest`         the remaining decks in ranked order
+//   - `topQualifies` whether `top` met `minGames` (vs a most-played fallback)
+//
+// Ranking: decks with >= `minGames` games come FIRST, by win% descending (ties
+// → more games); decks below the threshold follow, by games descending
+// (most-played first). So when nobody qualifies, `top` is simply the most-played
+// deck and `topQualifies` is false — the UI shows "needs more games" rather than
+// a misleading 100%. Non-object entries are ignored. Win% reuses the symmetric
+// per-deck `statsForDeck` (a deck counts on either side it appears).
+export function rankDecks(decks, games, minGames = MIN_RANKED_GAMES) {
+  const list = Array.isArray(decks) ? decks.filter((d) => d && typeof d === "object") : [];
+  if (list.length === 0) return {top: null, rest: [], topQualifies: false};
+  const withStats = list.map((d) => {
+    const s = statsForDeck(d.id, games);
+    return {deck: d, total: s.total, winPct: s.winPct == null ? -1 : s.winPct};
+  });
+  const ranked = withStats
+    .filter((x) => x.total >= minGames)
+    .sort((a, b) => b.winPct - a.winPct || b.total - a.total);
+  const unranked = withStats
+    .filter((x) => x.total < minGames)
+    .sort((a, b) => b.total - a.total);
+  const ordered = ranked.concat(unranked).map((x) => x.deck);
+  return {top: ordered[0] || null, rest: ordered.slice(1), topQualifies: ranked.length > 0};
+}

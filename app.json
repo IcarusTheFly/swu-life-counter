@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SWU Life Counter",
+    "name": "SWU Playtesting",
     "slug": "swu-life-counter",
     "version": "1.0.0",
     "orientation": "default",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#050505"
     },
     "ios": {
       "supportsTablet": true
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#050505"
       },
       "package": "com.icarusthefly.swulifecounter"
     },
