@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
+import {ASPECTS} from "../constants/decks";
 import {textShadow} from "../utils/textShadow";
 import {animatedDuration} from "../utils/animation";
 
@@ -146,7 +147,11 @@ export function DropdownSheet({visible, title, options, selectedKey, onPick, onC
                       accessibilityState={{selected: isSelected}}
                       accessibilityLabel={opt.label}
                     >
-                      {opt.aspectColor ? (
+                      {Array.isArray(opt.aspects) && opt.aspects.filter((a) => ASPECTS[a]).length > 0 ? (
+                        <View style={styles.optionDots}>
+                          {opt.aspects.map((a) => (ASPECTS[a] ? <View key={a} style={[styles.optionDot, {backgroundColor: ASPECTS[a].color}]} /> : null))}
+                        </View>
+                      ) : opt.aspectColor ? (
                         <View style={[styles.optionDot, {backgroundColor: opt.aspectColor}]} />
                       ) : opt.special ? null : (
                         <View style={styles.optionDotSpacer} />
@@ -279,6 +284,11 @@ const styles = StyleSheet.create({
     borderColor: "#4B79A1",
     backgroundColor: "#26303a"
   },
+  optionDots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
+  },
   optionDot: {
     width: 12,
     height: 12,
@@ -299,7 +309,8 @@ const styles = StyleSheet.create({
   },
   optionLabelSpecial: {
     color: "#CCC",
-    fontFamily: "FiraCode_400Regular"
+    fontFamily: "FiraCode_400Regular",
+    fontStyle: "italic"
   },
   optionCheck: {
     color: "#7fb4e0",

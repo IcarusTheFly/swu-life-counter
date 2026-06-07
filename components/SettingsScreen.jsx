@@ -2,24 +2,14 @@ import React, {useEffect, useRef, useState} from "react";
 import {BackHandler, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import BackIcon from "../icons/BackIcon";
-import PowerIcon from "../icons/PowerIcon";
 import Dropdown from "./Dropdown";
 import {useSettings} from "../context/SettingsContext";
 import {INITIAL_LIFE_MAX, INITIAL_LIFE_MIN, INITIAL_LIFE_PRESETS} from "../constants/settings";
 import {TEAM_COLORS, TEAM_COLOR_KEYS} from "../constants/teamColors";
+import {GOLD, GOLD_DEEP, TEXT} from "../constants/theme";
 import {textShadow} from "../utils/textShadow";
 
 const SHOW_HAPTICS_SECTION = Platform.OS !== "web";
-const SHOW_EXIT = Platform.OS !== "ios";
-
-// Exit relocated from Home (bottom-nav-and-dashboard). Android/web only.
-function handleExit() {
-  if (Platform.OS === "android") {
-    BackHandler.exitApp();
-  } else if (Platform.OS === "web" && typeof window !== "undefined") {
-    window.close();
-  }
-}
 
 // Module-level so it's built once, not per render.
 const COLOR_OPTIONS = TEAM_COLOR_KEYS.map((key) => ({
@@ -97,23 +87,16 @@ export default function SettingsScreen({onBack}) {
           />
         </View>
 
-        {/* ANIMATIONS */}
+        {/* ANIMATIONS — one switch governs both UI animations and the
+            drifting starfield (they read as the same thing to the user). */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>ANIMATIONS</Text>
-          <View style={styles.toggleGroup}>
-            <SettingToggle
-              label="Enable animations"
-              description="Overlays, dialogs, the initiative pop, and the background drift"
-              value={settings.enableAnimations}
-              onValueChange={(v) => updateSettings({enableAnimations: v})}
-            />
-            <SettingToggle
-              label="Animated background"
-              description="Drifting starfield behind every screen"
-              value={settings.animatedBackground}
-              onValueChange={(v) => updateSettings({animatedBackground: v})}
-            />
-          </View>
+          <SettingToggle
+            label="Enable animations"
+            description="Overlays, dialogs, the initiative pop, and the drifting starfield background"
+            value={settings.enableAnimations}
+            onValueChange={(v) => updateSettings({enableAnimations: v, animatedBackground: v})}
+          />
         </View>
 
         {/* HAPTIC FEEDBACK — mobile only */}
@@ -129,19 +112,6 @@ export default function SettingsScreen({onBack}) {
           </View>
         )}
 
-        {SHOW_EXIT && (
-          <View style={styles.section}>
-            <Pressable
-              onPress={handleExit}
-              style={({pressed}) => [styles.exitRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Exit the app"
-            >
-              <PowerIcon color="#d8807a" size={18} />
-              <Text style={styles.exitLabel}>Exit</Text>
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
     </View>
   );
@@ -278,8 +248,8 @@ function SettingToggle({label, description, value, onValueChange}) {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{false: "#3a3a3a", true: "#6e6e6e"}}
-        thumbColor={value ? "#e8e8e8" : "#9a9a9a"}
+        trackColor={{false: "#3a3a3a", true: GOLD_DEEP}}
+        thumbColor={value ? "#fbf2d6" : "#9a9a9a"}
         accessibilityRole="switch"
         accessibilityLabel={label}
         accessibilityState={{checked: value}}
@@ -327,11 +297,8 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 28
   },
-  toggleGroup: {
-    gap: 10
-  },
   sectionTitle: {
-    color: "#888",
+    color: TEXT.onSpace.secondary,
     fontFamily: "FiraCode_700Bold",
     fontSize: 11,
     letterSpacing: 3,
@@ -347,6 +314,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#2a2a2a",
+    borderTopColor: "#3a3a42",
     padding: 14
   },
 
@@ -356,6 +324,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#2a2a2a",
+    borderTopColor: "#3a3a42",
     padding: 18,
     alignItems: "center"
   },
@@ -428,8 +397,8 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   chipActive: {
-    backgroundColor: "#FFF",
-    borderColor: "#FFF"
+    backgroundColor: GOLD,
+    borderColor: GOLD
   },
   chipLabel: {
     color: "#CCC",
@@ -438,7 +407,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1
   },
   chipLabelActive: {
-    color: "#000"
+    color: "#241a04"
   },
 
   // ── Toggles ──
@@ -450,6 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#2a2a2a",
+    borderTopColor: "#3a3a42",
     padding: 14,
     minHeight: 56
   },
@@ -469,22 +439,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.3,
     marginTop: 2
-  },
-  exitRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    backgroundColor: "#0f0f12",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#5a2a2a",
-    minHeight: 52
-  },
-  exitLabel: {
-    color: "#d8807a",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 14,
-    letterSpacing: 1
   }
 });

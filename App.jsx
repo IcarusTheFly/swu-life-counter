@@ -18,6 +18,9 @@ import {RANDOM_DECK_ID} from "./constants/decks";
 // Which browse screens show the bottom tab bar (hidden in-game + in focused
 // edit flows), and which tab is "active" for each screen.
 const TAB_BAR_SCREENS = new Set(["home", "decks", "deck-detail", "game-history", "settings"]);
+// Tab-bar screens whose active tab follows the deck-detail origin rather than
+// the static map below (a deck opened from Home keeps Home lit).
+const ORIGIN_AWARE_SCREENS = new Set(["deck-detail", "game-history"]);
 const TAB_FOR_SCREEN = {
   home: "home",
   decks: "decks",
@@ -42,6 +45,10 @@ function AppContent() {
   // `activeDeckId` drives the deck-detail + deck-edit routes (the single
   // shared pool — no collection split, so one id state is enough).
   const [activeDeckId, setActiveDeckId] = useState(null);
+  // Where the current deck-detail was opened FROM ("home" | "decks") so Back
+  // (and the active tab) returns to the right place — opening a deck from Home
+  // must come back to Home, not Decks (metallic-design-system).
+  const [deckDetailOrigin, setDeckDetailOrigin] = useState("decks");
   // Bulk-add prefill context: {playerDeckId, opponentDeckId|null} captured
   // when the user opens Bulk Add from a deck (or a matchup row).
   const [activeGamesFilter, setActiveGamesFilter] = useState(null);
@@ -51,15 +58,20 @@ function AppContent() {
 
   const goHome = useCallback(() => setScreen("home"), []);
   const goGame = useCallback(() => setScreen("game"), []);
-  const goSettings = useCallback(() => setScreen("settings"), []);
   const goDecks = useCallback(() => setScreen("decks"), []);
   // Bottom-tab navigation drives the same screen state (no router).
   const navigateTab = useCallback((key) => setScreen(key), []);
 
-  const openDeckDetail = useCallback((id) => {
+  const openDeckDetail = useCallback((id, origin = "decks") => {
     setActiveDeckId(id);
+    setDeckDetailOrigin(origin === "home" ? "home" : "decks");
     setScreen("deck-detail");
   }, []);
+  // Origin-stamped openers so each caller records where it came from.
+  const openDeckDetailFromHome = useCallback((id) => openDeckDetail(id, "home"), [openDeckDetail]);
+  const openDeckDetailFromDecks = useCallback((id) => openDeckDetail(id, "decks"), [openDeckDetail]);
+  // Deck-detail Back / delete return to the origin (Home or Decks).
+  const closeDeckDetail = useCallback(() => setScreen(deckDetailOrigin), [deckDetailOrigin]);
   const openDeckEdit = useCallback((id) => {
     // `id === null` means "create a new deck".
     setActiveDeckId(id);
@@ -129,7 +141,9 @@ function AppContent() {
   }, [decks, settings.activeLoadout, settings.defaultDeckId, settings.defaultOpponentDeckId, updateSettings]);
 
   const showTabBar = TAB_BAR_SCREENS.has(screen);
-  const activeTab = TAB_FOR_SCREEN[screen] || "home";
+  // The deck-detail flow's active tab follows the origin (a deck opened from
+  // Home keeps the Home tab lit); everything else uses the static map.
+  const activeTab = ORIGIN_AWARE_SCREENS.has(screen) ? deckDetailOrigin : TAB_FOR_SCREEN[screen] || "home";
 
   return (
     <ScreenLayout>
@@ -137,25 +151,24 @@ function AppContent() {
       {screen === "home" && (
         <HomeScreen
           onStartGame={goGame}
-          onOpenSettings={goSettings}
-          onOpenDecks={goDecks}
           onOpenDeckEdit={openDeckEdit}
-          onOpenDeckDetail={openDeckDetail}
+          onOpenDeckDetail={openDeckDetailFromHome}
         />
       )}
       {screen === "settings" && <SettingsScreen onBack={goHome} />}
       {screen === "game" && <LifeCounter onReturnHome={goHome} />}
       {screen === "decks" && (
-        <DecksScreen onBack={goHome} onOpenDeckDetail={openDeckDetail} onOpenDeckEdit={openDeckEdit} />
+        <DecksScreen onBack={goHome} onOpenDeckDetail={openDeckDetailFromDecks} onOpenDeckEdit={openDeckEdit} />
       )}
       {screen === "deck-detail" && (
         <DeckDetailScreen
           deckId={activeDeckId}
-          onBack={goDecks}
+          onBack={closeDeckDetail}
+          backLabel={deckDetailOrigin === "home" ? "Back to Home" : "Back to Decks"}
           onOpenDeckEdit={openDeckEdit}
           onOpenBulkAddGames={openBulkAddGames}
           onOpenGameHistory={openGameHistory}
-          onDeleted={goDecks}
+          onDeleted={closeDeckDetail}
         />
       )}
       {screen === "game-history" && (

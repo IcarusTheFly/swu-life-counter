@@ -430,3 +430,62 @@ export function rankDecks(decks, games, minGames = MIN_RANKED_GAMES) {
   const ordered = ranked.concat(unranked).map((x) => x.deck);
   return {top: ordered[0] || null, rest: ordered.slice(1), topQualifies: ranked.length > 0};
 }
+
+// ── Recent-form sparkline series ─────────────────────────────────────────────
+// An ordered (oldest → newest) CUMULATIVE net-result series for a deck's last
+// `limit` games — for the Home card Sparkline. Start at 0, then +1 per Win,
+// −1 per Loss, +0 per Draw, computed over the windowed slice (so a rising line
+// means the deck has been winning lately). Returns [] when the deck has no
+// results. Symmetric + Random-aware (reuses `resultsForDeck`); sorts by
+// `playedAt` (stable) before taking the most-recent tail.
+export function recentForm(deckId, games, limit = 12) {
+  if (!Array.isArray(games)) return [];
+  const seq = [];
+  for (const game of games) {
+    const playedAt = game && typeof game.playedAt === "number" ? game.playedAt : 0;
+    for (const r of resultsForDeck(deckId, game)) seq.push({playedAt, r});
+  }
+  if (seq.length === 0) return [];
+  seq.sort((a, b) => a.playedAt - b.playedAt);
+  const n = Math.max(1, Math.floor(limit) || 1);
+  const recent = seq.slice(-n);
+  let net = 0;
+  return recent.map(({r}) => {
+    if (r === "W") net += 1;
+    else if (r === "L") net -= 1;
+    return net;
+  });
+}
+
+// Format a deck's record as NUMBERS ONLY, ALWAYS three of them — "15-5-2" /
+// "8-3-0" (wins-losses-draws). The draw count is always shown (even `0`) so
+// records read consistently. Never the "W-L-D" letters.
+export function formatRecord(stats) {
+  const w = (stats && stats.wins) || 0;
+  const l = (stats && stats.losses) || 0;
+  const d = (stats && stats.draws) || 0;
+  return `${w}-${l}-${d}`;
+}
+
+// ── Home header model ────────────────────────────────────────────────────────
+// The data behind the Home metallic header bar's three cells — derived once so
+// the placeholder logic (empty library → no top deck; a ranked-but-gameless
+// deck → name with no record) is pure and testable, independent of layout:
+//   {deckCount, gameCount, topDeck: {id, name, stats, hasGames} | null}
+// `topDeck` is null only when there are NO decks (the UI shows "—"); a deck with
+// zero games still ranks (most-played fallback) but reports `hasGames: false`
+// so the header shows its name without a misleading record. Safe on garbage
+// input (never throws).
+export function homeHeaderModel(decks, games) {
+  const g = globalStats(decks, games);
+  const ranking = rankDecks(decks, games);
+  const top = ranking.top;
+  const topStats = top ? statsForDeck(top.id, games) : null;
+  return {
+    deckCount: g.deckCount,
+    gameCount: g.gameCount,
+    topDeck: top
+      ? {id: top.id, name: top.name || "Untitled deck", stats: topStats, hasGames: topStats.total > 0}
+      : null
+  };
+}

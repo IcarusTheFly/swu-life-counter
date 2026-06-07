@@ -13,12 +13,14 @@ import {
 import {LinearGradient} from "expo-linear-gradient";
 import BackIcon from "../icons/BackIcon";
 import ConfirmationModal from "./ConfirmationModal";
+import MetalCard from "./ui/MetalCard";
+import Sparkline from "./ui/Sparkline";
+import RecordNumbers from "./ui/RecordNumbers";
 import {WinRateBar, accentForDeck} from "./DeckCard";
 import {useDecks} from "../context/DecksContext";
 import {useSettings} from "../context/SettingsContext";
 import {
   ASPECTS,
-  MATCHUP_ARCHETYPE_MAX,
   MATCHUP_COMMENTS_MAX,
   RANDOM_DECK_ID
 } from "../constants/decks";
@@ -26,9 +28,11 @@ import {
   eventsInGames,
   groupMatchupsByEvent,
   matchupsForDeck,
+  recentForm,
   statsForDeck,
   streakForDeck
 } from "../context/deckStats";
+import {GOLD, RECORD, TEXT} from "../constants/theme";
 import {textShadow} from "../utils/textShadow";
 
 // Deck detail view (v3). Symmetric overall W-L-D + emphasized win% + a
@@ -42,6 +46,7 @@ import {textShadow} from "../utils/textShadow";
 export default function DeckDetailScreen({
   deckId,
   onBack,
+  backLabel = "Back to Decks",
   onOpenDeckEdit,
   onOpenBulkAddGames,
   onOpenGameHistory,
@@ -81,6 +86,7 @@ export default function DeckDetailScreen({
 
   const stats = useMemo(() => (deck ? statsForDeck(deck.id, games) : null), [deck, games]);
   const streak = useMemo(() => (deck ? streakForDeck(deck.id, games) : null), [deck, games]);
+  const formPoints = useMemo(() => (deck ? recentForm(deck.id, games) : []), [deck, games]);
 
   // Games involving this deck on EITHER side — drives the event-grouping
   // decision (the matchup math itself is done by the symmetric helpers).
@@ -125,7 +131,9 @@ export default function DeckDetailScreen({
 
   const isPlayerDefault = settings.defaultDeckId === deck.id;
   const isOpponentDefault = settings.defaultOpponentDeckId === deck.id;
-  const winPctLabel = stats.winPct === null ? "–" : stats.winPct.toFixed(1) + "%";
+  // Recent-form trend color for the overall sparkline (net ≥/≤ 0 → win/loss tint).
+  const lastForm = formPoints.length ? formPoints[formPoints.length - 1] : 0;
+  const formTrend = lastForm > 0 ? RECORD.onMetal.win : lastForm < 0 ? RECORD.onMetal.loss : TEXT.onMetal.muted;
 
   // Toggle this deck as the default PLAYER deck. Checking sets it and selects
   // it on the player1 loadout side. Unchecking clears the default and resets
@@ -191,7 +199,7 @@ export default function DeckDetailScreen({
           hitSlop={8}
           style={({pressed}) => [styles.backBtn, pressed && styles.pressedSubtle]}
           accessibilityRole="button"
-          accessibilityLabel="Back to Decks"
+          accessibilityLabel={backLabel}
         >
           <BackIcon stroke="#FFF" size={22} />
         </Pressable>
@@ -203,75 +211,74 @@ export default function DeckDetailScreen({
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {/* IDENTITY: aspect dots + leader + archetype */}
         {(deck.aspects.length > 0 || deck.leader || deck.archetype) ? (
-          <View style={styles.identityRow}>
-            <View style={[styles.identityAccent, {backgroundColor: accentForDeck(deck)}]} />
+          <MetalCard edge={accentForDeck(deck)} style={styles.identityCard}>
             <View style={styles.identityCol}>
               <AspectsWithLabels aspects={deck.aspects} />
-              {deck.leader ? <Text style={styles.leader}>{deck.leader}</Text> : null}
-              {deck.archetype ? <Text style={styles.archetype}>{deck.archetype}</Text> : null}
+              {deck.leader ? (
+                <Text style={styles.leader}>
+                  <Text style={styles.identityKey}>Leader: </Text>
+                  {deck.leader}
+                </Text>
+              ) : null}
+              {deck.archetype ? (
+                <Text style={styles.archetype}>
+                  <Text style={styles.identityKey}>Archetype: </Text>
+                  {deck.archetype}
+                </Text>
+              ) : null}
             </View>
-          </View>
+          </MetalCard>
         ) : null}
 
-        {/* OVERALL STATS — win% is the headline number. */}
+        {/* OVERALL STATS — the record (numbers only) + recent form, not a rate. */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>OVERALL</Text>
-          <View style={styles.statsCard}>
+          <MetalCard>
             {stats.total === 0 ? (
               <Text style={styles.noGamesText}>No games yet</Text>
             ) : (
-              <>
-                <View style={styles.statsTopRow}>
-                  <Text style={styles.bigPct}>{winPctLabel}</Text>
-                  <View style={styles.statsRight}>
-                    <Text style={styles.wld}>
-                      {stats.wins}–{stats.losses}–{stats.draws}
-                    </Text>
-                    <Text style={styles.wldLabel}>W – L – D</Text>
-                    {streak ? <StreakBadge streak={streak} /> : null}
-                  </View>
+              <View style={styles.statsRow}>
+                <View style={styles.statsLeft}>
+                  <RecordNumbers stats={stats} surface="onMetal" size={34} />
+                  <Text style={styles.statsCaption}>{stats.total} game{stats.total === 1 ? "" : "s"} tracked</Text>
                 </View>
-                <WinRateBar pct={stats.winPct} />
-              </>
+                <View style={styles.statsRight}>
+                  {formPoints.length ? (
+                    <Sparkline points={formPoints} color={formTrend} width={96} height={36} strokeWidth={2.5} />
+                  ) : null}
+                  {streak ? <StreakBadge streak={streak} /> : null}
+                </View>
+              </View>
             )}
-          </View>
+          </MetalCard>
         </View>
 
         {/* NOTES */}
         {deck.notes ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>NOTES</Text>
-            <View style={styles.notesCard}>
+            <MetalCard>
               <Text style={styles.notesText}>{deck.notes}</Text>
-            </View>
+            </MetalCard>
           </View>
         ) : null}
 
-        {/* MATCHUPS */}
+        {/* MATCHUPS — derived from recorded games; display only (no add). */}
         <View style={styles.section}>
-          <View style={styles.matchupHeaderRow}>
-            <Text style={styles.sectionTitle}>MATCHUPS</Text>
-            <Pressable
-              onPress={() => setAddMatchupVisible(true)}
-              hitSlop={8}
-              style={({pressed}) => [styles.addMatchupBtn, pressed && styles.pressedSubtle]}
-              accessibilityRole="button"
-              accessibilityLabel="Add a matchup"
-            >
-              <Text style={styles.addMatchupLabel}>+ ADD</Text>
-            </Pressable>
-          </View>
+          <Text style={styles.sectionTitle}>MATCHUPS</Text>
 
           {flatMatchups.length === 0 ? (
             <View style={styles.emptyMatchups}>
               <Text style={styles.emptyMatchupsText}>
-                No matchups yet. Record a game or add one to start tracking.
+                No matchups yet. Record a game to start tracking.
               </Text>
             </View>
           ) : hasEvents ? (
             eventGroups.map((group) => (
               <View key={group.event === null ? "__other__" : group.event} style={styles.eventGroup}>
-                <Text style={styles.eventHeader}>{group.event === null ? "OTHER" : group.event}</Text>
+                <Text style={styles.eventHeader}>
+                  {group.event === null ? "OTHER" : <><Text style={styles.eventHeaderKey}>Event: </Text>{group.event}</>}
+                </Text>
                 <View style={styles.matchupList}>{group.matchups.map(renderMatchupRow)}</View>
               </View>
             ))
@@ -355,49 +362,41 @@ function AspectsWithLabels({aspects}) {
   );
 }
 
+// Streak as a colored arrow + count — no W/L/D letter (▲ win, ▼ loss, = draw).
 function StreakBadge({streak}) {
+  const glyph = streak.kind === "W" ? "▲" : streak.kind === "L" ? "▼" : "=";
+  const color = streak.kind === "W" ? RECORD.onMetal.win : streak.kind === "L" ? RECORD.onMetal.loss : TEXT.onMetal.muted;
   return (
     <View style={styles.streakBadge}>
-      <Text style={styles.streakText}>
-        {streak.kind}
+      <Text style={[styles.streakText, {color}]}>
+        {glyph}
         {streak.count}
       </Text>
     </View>
   );
 }
 
-// One matchup row. Top line: opponent name + W-L-D + win% + a tiny win-rate
-// bar. NAMED rows expose an inline-editable archetype tag + an expandable
-// comments editor (persisted via upsertMatchup). The synthetic "Random" row
+// One matchup row. Top line: opponent name + numbers-only record + win% + a
+// tiny win-rate bar. NAMED rows show their strategic notes READ-ONLY; the notes
+// become editable only after an explicit "Edit" tap. The synthetic "Random" row
 // (opponentDeckId === RANDOM_DECK_ID) renders stats only — Random accrues no
 // directional notes (design.md Decision 4).
 function MatchupRow({row, playerDeckId, getMatchup, upsertMatchup}) {
   const isRandom = row.opponentDeckId === RANDOM_DECK_ID;
   const record = isRandom ? null : getMatchup(playerDeckId, row.opponentDeckId);
-  const archetype = record ? record.archetype || "" : "";
   const comments = record ? record.comments || "" : "";
 
-  const [editingArchetype, setEditingArchetype] = useState(false);
-  const [archetypeDraft, setArchetypeDraft] = useState(archetype);
-  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [commentsDraft, setCommentsDraft] = useState(comments);
 
   const pct = row.winPct === null ? "–" : row.winPct.toFixed(1) + "%";
 
-  const saveArchetype = () => {
-    setEditingArchetype(false);
-    const next = archetypeDraft.trim();
-    if (next !== archetype) {
-      upsertMatchup(playerDeckId, row.opponentDeckId, {archetype: next});
-    }
+  const startEdit = () => {
+    setCommentsDraft(comments);
+    setEditing(true);
   };
-  const cancelArchetype = () => {
-    setArchetypeDraft(archetype);
-    setEditingArchetype(false);
-  };
-
   const saveComments = () => {
-    setCommentsExpanded(false);
+    setEditing(false);
     const next = commentsDraft.trim();
     if (next !== comments) {
       upsertMatchup(playerDeckId, row.opponentDeckId, {comments: next});
@@ -405,7 +404,7 @@ function MatchupRow({row, playerDeckId, getMatchup, upsertMatchup}) {
   };
   const cancelComments = () => {
     setCommentsDraft(comments);
-    setCommentsExpanded(false);
+    setEditing(false);
   };
 
   return (
@@ -415,9 +414,7 @@ function MatchupRow({row, playerDeckId, getMatchup, upsertMatchup}) {
           {row.opponentName}
         </Text>
         <View style={styles.matchupStats}>
-          <Text style={styles.matchupWld}>
-            {row.wins}–{row.losses}–{row.draws}
-          </Text>
+          <RecordNumbers stats={row} surface="onSpace" size={13} />
           <Text style={styles.matchupPct}>{pct}</Text>
         </View>
       </View>
@@ -426,40 +423,8 @@ function MatchupRow({row, playerDeckId, getMatchup, upsertMatchup}) {
         <WinRateBar pct={row.winPct} />
       </View>
 
-      {/* Notes are directional + NAMED-only — the Random row stops here. */}
-      {isRandom ? null : editingArchetype ? (
-        <View style={styles.inlineEditRow}>
-          <TextInput
-            value={archetypeDraft}
-            onChangeText={setArchetypeDraft}
-            onBlur={saveArchetype}
-            maxLength={MATCHUP_ARCHETYPE_MAX}
-            autoFocus
-            style={styles.inlineInput}
-            placeholder="Archetype"
-            placeholderTextColor="#666"
-            accessibilityLabel="Matchup archetype"
-          />
-          <InlineBtn label="Save" onPress={saveArchetype} />
-          <InlineBtn label="Cancel" onPress={cancelArchetype} subtle />
-        </View>
-      ) : (
-        <Pressable
-          onPress={() => {
-            setArchetypeDraft(archetype);
-            setEditingArchetype(true);
-          }}
-          style={({pressed}) => [styles.archetypeChip, pressed && styles.pressedSubtle]}
-          accessibilityRole="button"
-          accessibilityLabel={archetype ? `Edit archetype ${archetype}` : "Add archetype"}
-        >
-          <Text style={[styles.archetypeChipText, !archetype && styles.placeholderText]} numberOfLines={1}>
-            {archetype || "+ archetype"}
-          </Text>
-        </Pressable>
-      )}
-
-      {isRandom ? null : commentsExpanded ? (
+      {/* Notes are NAMED-only + READ-ONLY until you explicitly tap Edit. */}
+      {isRandom ? null : editing ? (
         <View style={styles.commentsEditor}>
           <TextInput
             value={commentsDraft}
@@ -473,29 +438,27 @@ function MatchupRow({row, playerDeckId, getMatchup, upsertMatchup}) {
             style={styles.commentsInput}
             placeholder="Strategic notes for this matchup…"
             placeholderTextColor="#666"
-            accessibilityLabel="Matchup comments"
+            accessibilityLabel="Matchup notes"
           />
           <View style={styles.inlineEditRow}>
             <InlineBtn label="Save" onPress={saveComments} />
             <InlineBtn label="Cancel" onPress={cancelComments} subtle />
           </View>
         </View>
-      ) : (
-        <Pressable
-          onPress={() => {
-            setCommentsDraft(comments);
-            setCommentsExpanded(true);
-          }}
-          style={({pressed}) => [styles.commentsPreviewRow, pressed && styles.pressedSubtle]}
-          accessibilityRole="button"
-          accessibilityLabel={comments ? "Edit matchup comments" : "Add matchup comments"}
-        >
-          <Text style={styles.commentsChevron}>{comments ? "▾" : "+"}</Text>
-          <Text style={[styles.commentsPreview, !comments && styles.placeholderText]} numberOfLines={1}>
-            {comments || "Add notes"}
-          </Text>
-        </Pressable>
-      )}
+      ) : comments ? (
+        <View style={styles.notesReadRow}>
+          <Text style={styles.notesReadText}>{comments}</Text>
+          <Pressable
+            onPress={startEdit}
+            hitSlop={6}
+            style={({pressed}) => [styles.notesEditBtn, pressed && styles.pressedSubtle]}
+            accessibilityRole="button"
+            accessibilityLabel="Edit matchup notes"
+          >
+            <Text style={styles.notesEditText}>✎ Edit</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -661,28 +624,20 @@ const styles = StyleSheet.create({
     marginBottom: 24
   },
   sectionTitle: {
-    color: "#888",
+    color: TEXT.onSpace.secondary,
     fontFamily: "FiraCode_700Bold",
     fontSize: 11,
     letterSpacing: 3,
     marginBottom: 12,
     marginLeft: 2
   },
-  identityRow: {
-    flexDirection: "row",
-    backgroundColor: "#15151a",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#2a2a2e",
-    overflow: "hidden",
+  identityCard: {
     marginBottom: 24
-  },
-  identityAccent: {
-    width: 4
   },
   identityCol: {
     flex: 1,
-    paddingHorizontal: 14,
+    paddingLeft: 16,
+    paddingRight: 14,
     paddingVertical: 14
   },
   dotsRow: {
@@ -701,98 +656,79 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.4)"
+    borderColor: "rgba(0,0,0,0.3)"
   },
   dotLabel: {
-    color: "#DDD",
+    color: TEXT.onMetal.secondary,
     fontFamily: "FiraCode_400Regular",
     fontSize: 12,
     letterSpacing: 0.5
   },
   leader: {
-    color: "#CCC",
-    fontFamily: "FiraCode_400Regular",
+    color: TEXT.onMetal.primary,
+    fontFamily: "FiraCode_700Bold",
     fontSize: 14,
     letterSpacing: 0.5,
     marginTop: 10
   },
   archetype: {
-    color: "#8a8a92",
+    color: TEXT.onMetal.muted,
     fontFamily: "FiraCode_400Regular",
     fontSize: 13,
     letterSpacing: 0.5,
     marginTop: 4
   },
-  statsCard: {
-    backgroundColor: "#15151a",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#2a2a2e",
-    padding: 18
-  },
+  identityKey: {color: TEXT.onMetal.muted, fontFamily: "FiraCode_700Bold"},
   noGamesText: {
-    color: "#888",
+    color: TEXT.onMetal.muted,
     fontFamily: "FiraCode_400Regular",
     fontSize: 14,
     letterSpacing: 0.5,
-    textAlign: "center"
+    textAlign: "center",
+    padding: 20
   },
-  statsTopRow: {
+  statsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 12
   },
-  bigPct: {
-    color: "#FFF",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 44,
+  statsLeft: {
+    minWidth: 0,
+    flexShrink: 1
+  },
+  statsCaption: {
+    color: TEXT.onMetal.muted,
+    fontFamily: "FiraCode_400Regular",
+    fontSize: 11,
     letterSpacing: 0.5,
-    ...textShadow({color: "rgba(0,0,0,0.6)", offset: {width: 0, height: 2}, radius: 6})
+    marginTop: 4
   },
   statsRight: {
     alignItems: "flex-end",
-    gap: 4
-  },
-  wld: {
-    color: "#EEE",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 20,
-    letterSpacing: 1
-  },
-  wldLabel: {
-    color: "#777",
-    fontFamily: "FiraCode_400Regular",
-    fontSize: 10,
-    letterSpacing: 1.5
+    gap: 6
   },
   streakBadge: {
     borderWidth: 1,
-    borderColor: "#3a3a40",
+    borderColor: "rgba(0,0,0,0.2)",
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginTop: 4
+    paddingVertical: 3
   },
   streakText: {
-    color: "#CCC",
     fontFamily: "FiraCode_700Bold",
     fontSize: 12,
     letterSpacing: 0.8
   },
-  notesCard: {
-    backgroundColor: "#15151a",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#2a2a2e",
-    padding: 14
-  },
   notesText: {
-    color: "#DDD",
+    color: TEXT.onMetal.secondary,
     fontFamily: "FiraCode_400Regular",
     fontSize: 14,
     letterSpacing: 0.3,
-    lineHeight: 20
+    lineHeight: 20,
+    padding: 14
   },
   matchupHeaderRow: {
     flexDirection: "row",
@@ -806,7 +742,7 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   addMatchupLabel: {
-    color: "#FFF",
+    color: GOLD,
     fontFamily: "FiraCode_700Bold",
     fontSize: 12,
     letterSpacing: 1.2
@@ -837,6 +773,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 2
   },
+  eventHeaderKey: {color: TEXT.onSpace.muted},
   matchupList: {
     backgroundColor: "#15151a",
     borderRadius: 14,
@@ -873,12 +810,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12
   },
-  matchupWld: {
-    color: "#DDD",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.5
-  },
   matchupPct: {
     color: "#888",
     fontFamily: "FiraCode_400Regular",
@@ -890,57 +821,25 @@ const styles = StyleSheet.create({
   matchupBar: {
     marginTop: 8
   },
-  archetypeChip: {
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "#3a3a40",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginTop: 8,
-    maxWidth: "100%"
-  },
-  archetypeChipText: {
-    color: "#CCC",
-    fontFamily: "FiraCode_400Regular",
-    fontSize: 12,
-    letterSpacing: 0.5
-  },
-  placeholderText: {
-    color: "#666",
-    fontStyle: "italic"
-  },
   inlineEditRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginTop: 8
   },
-  inlineInput: {
-    flex: 1,
-    color: "#FFF",
-    fontFamily: "FiraCode_400Regular",
-    fontSize: 13,
-    backgroundColor: "#16161a",
-    borderWidth: 1,
-    borderColor: "#3a3a3a",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6
-  },
   inlineBtn: {
     borderRadius: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#4B79A1",
+    backgroundColor: GOLD,
     minHeight: 32,
     justifyContent: "center"
   },
   inlineBtnSubtle: {
-    backgroundColor: "#333"
+    backgroundColor: "#2a2a30"
   },
   inlineBtnLabel: {
-    color: "#FFF",
+    color: "#241a04",
     fontFamily: "FiraCode_700Bold",
     fontSize: 12,
     letterSpacing: 0.5
@@ -948,25 +847,30 @@ const styles = StyleSheet.create({
   inlineBtnLabelSubtle: {
     color: "#CCC"
   },
-  commentsPreviewRow: {
+  notesReadRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    alignItems: "flex-start",
+    gap: 10,
     marginTop: 8
   },
-  commentsChevron: {
-    color: "#888",
-    fontFamily: "FiraCode_700Bold",
-    fontSize: 13,
-    width: 14,
-    textAlign: "center"
-  },
-  commentsPreview: {
+  notesReadText: {
     flex: 1,
-    color: "#BBB",
+    color: TEXT.onSpace.secondary,
     fontFamily: "FiraCode_400Regular",
     fontSize: 12,
-    letterSpacing: 0.3
+    letterSpacing: 0.2,
+    lineHeight: 17
+  },
+  notesEditBtn: {
+    flexShrink: 0,
+    paddingVertical: 2,
+    paddingHorizontal: 2
+  },
+  notesEditText: {
+    color: GOLD,
+    fontFamily: "FiraCode_700Bold",
+    fontSize: 11,
+    letterSpacing: 0.5
   },
   commentsEditor: {
     marginTop: 8

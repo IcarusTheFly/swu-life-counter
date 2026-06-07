@@ -76,3 +76,48 @@ export function textOnColor(base) {
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   return lum > 150 ? "#1a1a1f" : "#FFFFFF";
 }
+
+// ── Design system (metallic-design-system) ───────────────────────────────────
+// The consolidated token set every screen builds on, alongside the gradients
+// above. Pure data — safe to import anywhere.
+
+// Gold — the SECONDARY accent paired with silver for glow/emphasis (per the app
+// icon): the primary CTA glow, the crown, active/selected states.
+export const GOLD = "#e8c45a";
+export const GOLD_DEEP = "#caa23a";
+export const GOLD_GLOW = "rgba(232, 196, 90, 0.55)";
+
+// Brushed-silver surface gradients — LIGHT metal that DARK text rides on for
+// high contrast (distinct from the dark `GRADIENTS.SILVER` used by dialogs).
+export const METAL = {
+  surface: ["#d2d5da", "#eef0f2", "#c5c9cf", "#aeb2b9"], // sheen highlight near the top
+  surfacePressed: ["#bcc0c6", "#d4d7db", "#aeb2b9"],
+  goldSurface: ["#e7cf86", "#f6e7b2", "#dcbb5e", "#c69e36"], // gold-tinted metal
+  border: "#7c808a",
+  bevelLight: "#fbfcfd",
+  bevelDark: "#585b62"
+};
+
+// Text tiers by surface (contrast-first).
+export const TEXT = {
+  onMetal: {primary: "#191b1f", secondary: "#3b3e45", muted: "#5d616b"},
+  onSpace: {primary: "#f1f2f4", secondary: "#b7bbc3", muted: "#7f828b"}
+};
+
+// Type scale (the app font is FiraCode).
+export const TYPE = {
+  display: {fontFamily: "FiraCode_700Bold", fontSize: 22, letterSpacing: 1.2},
+  title: {fontFamily: "FiraCode_700Bold", fontSize: 17, letterSpacing: 0.3},
+  stat: {fontFamily: "FiraCode_700Bold", fontSize: 15, letterSpacing: 0.3},
+  label: {fontFamily: "FiraCode_700Bold", fontSize: 11, letterSpacing: 2},
+  body: {fontFamily: "FiraCode_400Regular", fontSize: 14, letterSpacing: 0.2},
+  caption: {fontFamily: "FiraCode_400Regular", fontSize: 11, letterSpacing: 0.3}
+};
+
+// Record W-L-D number colors. Two sets so the same wins/losses/draws read with
+// good contrast on EITHER surface: dark, saturated tones on light metal; bright,
+// lifted tones on the dark space backdrop. The sparkline accent shares onSpace.
+export const RECORD = {
+  onMetal: {win: "#1f7a47", loss: "#a8362e", draw: "#5d616b"},
+  onSpace: {win: "#46d29a", loss: "#e8736b", draw: "#9a9da6"}
+};

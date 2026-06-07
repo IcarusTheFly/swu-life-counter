@@ -1,143 +1,143 @@
-import React, {useMemo} from "react";
-import {Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions} from "react-native";
+import React, {useMemo, useState} from "react";
+import {BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
-import MenuButton from "./MenuButton";
-import Dropdown from "./Dropdown";
-import PlayIcon from "../icons/PlayIcon";
+import Svg, {Polyline} from "react-native-svg";
+import MetalCard from "./ui/MetalCard";
+import PrimaryButton from "./ui/PrimaryButton";
+import SectionLabel from "./ui/SectionLabel";
+import HeaderStat, {headerStatStyles} from "./ui/HeaderStat";
+import SelectRow from "./ui/SelectRow";
+import Sparkline from "./ui/Sparkline";
+import RecordNumbers from "./ui/RecordNumbers";
+import CrownIcon from "../icons/CrownIcon";
+import SabersIcon from "../icons/SabersIcon";
 import DeckIcon from "../icons/DeckIcon";
+import PlayIcon from "../icons/PlayIcon";
+import PowerIcon from "../icons/PowerIcon";
 import {useDecks} from "../context/DecksContext";
 import {useSettings} from "../context/SettingsContext";
-import {globalStats, statsForDeck, rankDecks, MIN_RANKED_GAMES} from "../context/deckStats";
+import {homeHeaderModel, rankDecks, statsForDeck, recentForm} from "../context/deckStats";
 import {RANDOM_DECK_ID} from "../constants/decks";
-import {GRADIENTS} from "../constants/theme";
+import {METAL, RADIUS, RECORD, TEXT, TYPE} from "../constants/theme";
 import {accentForDeck} from "./DeckCard";
-import {textShadow} from "../utils/textShadow";
+import {homeExitVisible} from "../utils/exit";
 
 const KEY_RANDOM = RANDOM_DECK_ID;
 const KEY_CREATE = "__create__";
-const MAX_TOP_DECKS = 3;
+// Home shows just the strongest few decks (so the Play button stays reachable);
+// the full list lives on the Decks tab — no "see all" link needed.
+const MAX_HOME_DECKS = 4;
 
-function winColor(pct) {
-  if (pct == null) return "#6f727a";
-  return pct >= 60 ? "#46d29a" : pct >= 45 ? "#d8c45a" : "#d86a6a";
-}
-function fmtRecord(s) {
-  return s.draws > 0 ? `${s.wins}–${s.losses}–${s.draws}` : `${s.wins}–${s.losses}`;
+// Exit lives on Home only (Android/web — iOS apps don't self-exit, and the App
+// Store rejects a quit control; hidden in landscape, see homeExitVisible).
+// Android closes the task; web closes the tab.
+function handleExit() {
+  if (Platform.OS === "android") {
+    BackHandler.exitApp();
+  } else if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.close();
+  }
 }
 
-// Featured top-performer card. The card body (open detail) and the Test button
-// are SIBLING pressables (never nested) to avoid the web <button>-in-<button>.
-function FeaturedDeck({deck, games, qualifies, onTest, onOpen}) {
-  const accent = accentForDeck(deck);
-  const s = statsForDeck(deck.id, games);
-  const pct = s.total > 0 ? Math.round(s.winPct) : null;
-  const color = winColor(pct);
-  const showPct = qualifies && pct != null;
-  const archetype = deck.archetype || (Array.isArray(deck.aspects) ? deck.aspects.join(" · ") : "");
+// An engraved frame that HUGS the brand title: a short horizontal line directly
+// under the title that turns UP diagonally at both ends and finishes at the top,
+// inset from the bar edges (＼___／). The flat run is the title width (+pad), and
+// the diagonals splay out by `diagW` as they rise — so the whole shape frames
+// just the title, never reaching the sides. Drawn as two offset polylines — a
+// dark line with a light line 1px below — to read as a groove carved in metal.
+function HeaderFrame({width, titleW, height, diagW, pad}) {
+  const cx = width / 2;
+  const top = 1; // diagonal tips sit at the very top edge of the bar
+  const bot = height - 1.5;
+  const flatHalf = Math.min(titleW / 2 + pad, cx - diagW - 2); // never exceed the bar
+  const topHalf = flatHalf + diagW;
+  const path = (shift) =>
+    `${cx - topHalf},${top + shift} ${cx - flatHalf},${bot + shift} ` +
+    `${cx + flatHalf},${bot + shift} ${cx + topHalf},${top + shift}`;
   return (
-    <View style={styles.featuredWrap}>
-      <Pressable
-        onPress={() => onOpen(deck.id)}
-        style={({pressed}) => [pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`Top performer: ${deck.name || "deck"}. Open deck.`}
-      >
-        <LinearGradient colors={["#1a1a23", "#101016"]} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.featured}>
-          <Text style={styles.featuredLabel}>★ TOP PERFORMER</Text>
-          <View style={styles.featuredRow}>
-            <View style={[styles.featuredDot, {backgroundColor: accent || "#666"}]} />
-            <View style={styles.featuredInfo}>
-              <Text style={styles.featuredName} numberOfLines={1}>{deck.name || "Untitled deck"}</Text>
-              {archetype ? <Text style={styles.featuredArch} numberOfLines={1}>{archetype}</Text> : null}
-            </View>
-            <View style={styles.featuredStats}>
-              {showPct ? (
-                <Text style={[styles.featuredPct, {color}]}>{pct}%</Text>
-              ) : (
-                <Text style={styles.featuredNeeds}>needs {MIN_RANKED_GAMES}+ games</Text>
-              )}
-              <Text style={styles.featuredRecord}>{fmtRecord(s)}</Text>
-            </View>
-          </View>
-          {showPct ? (
-            <View style={styles.featuredBar}>
-              <View style={[styles.featuredBarFill, {width: `${pct}%`, backgroundColor: color}]} />
-            </View>
-          ) : null}
-        </LinearGradient>
-      </Pressable>
-      <Pressable
-        onPress={() => onTest(deck.id)}
-        style={({pressed}) => [styles.featuredTest, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`Test ${deck.name || "deck"}`}
-      >
-        <PlayIcon color="#e8e8ee" size={14} />
-        <Text style={styles.featuredTestTxt}>Test this deck</Text>
-      </Pressable>
-    </View>
+    <Svg width={width} height={height} style={styles.frameSvg}>
+      <Polyline points={path(0)} fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <Polyline points={path(1)} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" />
+    </Svg>
   );
 }
 
-// Compact deck row — the top-decks list.
-function DeckRow({deck, games, rank, onTest, onOpen}) {
-  const accent = accentForDeck(deck);
+// One deck in the Home "YOUR DECKS" list — a metallic card: aspect-colored
+// edge, name (dark, high-contrast), a recent-form sparkline, numbers-only
+// record, and a dark TEST pill. No win% (we rank, we don't rate). The card body
+// (open detail) and the TEST pill are SIBLING pressables to avoid nesting a
+// <button> in a <button> on web.
+function HomeDeckCard({deck, games, onTest, onOpen}) {
+  const accent = accentForDeck(deck) || "#6b6f78";
   const s = statsForDeck(deck.id, games);
   const hasGames = s.total > 0;
-  const pct = hasGames ? Math.round(s.winPct) : null;
-  const color = winColor(pct);
+  const pts = recentForm(deck.id, games);
+  const last = pts.length ? pts[pts.length - 1] : 0;
+  const trend = last > 0 ? RECORD.onMetal.win : last < 0 ? RECORD.onMetal.loss : TEXT.onMetal.muted;
   const archetype = deck.archetype || (Array.isArray(deck.aspects) ? deck.aspects.join(" · ") : "");
+  const name = deck.name || "Untitled deck";
+  const a11y = `${name}, ${
+    hasGames ? `record ${s.wins} wins ${s.losses} losses${s.draws ? ` ${s.draws} draws` : ""}` : "no games yet"
+  }. Open deck.`;
   return (
-    <View style={styles.deckRow}>
-      <Pressable
-        style={({pressed}) => [styles.deckMain, pressed && styles.pressed]}
-        onPress={() => onOpen(deck.id)}
-        accessibilityRole="button"
-        accessibilityLabel={`${deck.name || "Untitled deck"}, ${hasGames ? `${fmtRecord(s)}, ${pct} percent win` : "no games yet"}. Open deck.`}
-      >
-        {rank ? <Text style={styles.deckRank}>#{rank}</Text> : null}
-        <View style={[styles.deckDot, {backgroundColor: accent || "#666"}]} />
-        <View style={styles.deckInfo}>
-          <Text style={styles.deckName} numberOfLines={1}>{deck.name || "Untitled deck"}</Text>
-          {archetype ? <Text style={styles.deckArch} numberOfLines={1}>{archetype}</Text> : null}
-        </View>
-        <View style={styles.deckStats}>
-          {hasGames ? (
-            <>
-              <Text style={styles.deckWl}>{fmtRecord(s)}</Text>
-              <Text style={[styles.deckPct, {color}]}>{pct}%</Text>
-            </>
-          ) : (
-            <Text style={styles.deckNoGames}>no games yet</Text>
-          )}
-        </View>
-      </Pressable>
-      <Pressable
-        style={({pressed}) => [styles.testBtn, pressed && styles.pressed]}
-        onPress={() => onTest(deck.id)}
-        accessibilityRole="button"
-        accessibilityLabel={`Test ${deck.name || "deck"}`}
-      >
-        <Text style={styles.testTxt}>▶ Test</Text>
-      </Pressable>
-    </View>
+    <MetalCard edge={accent} style={styles.deckCard}>
+      <View style={styles.deckRow}>
+        <Pressable
+          style={({pressed}) => [styles.deckBody, pressed && styles.pressed]}
+          onPress={() => onOpen(deck.id)}
+          accessibilityRole="button"
+          accessibilityLabel={a11y}
+        >
+          <View style={styles.deckInfo}>
+            <Text style={styles.deckName} numberOfLines={1}>{name}</Text>
+            {archetype ? <Text style={styles.deckArch} numberOfLines={1}>{archetype}</Text> : null}
+          </View>
+          <View style={styles.deckRight}>
+            {hasGames ? <Sparkline points={pts} color={trend} width={52} height={20} /> : null}
+            {hasGames ? <RecordNumbers stats={s} surface="onMetal" size={14} /> : <Text style={styles.noGames}>no games</Text>}
+          </View>
+        </Pressable>
+        <Pressable
+          style={({pressed}) => [styles.testPill, pressed && styles.pressed]}
+          onPress={() => onTest(deck.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Test ${name}`}
+        >
+          <PlayIcon color="#f1f2f4" size={11} />
+          <Text style={styles.testTxt}>TEST</Text>
+        </Pressable>
+      </View>
+    </MetalCard>
   );
 }
 
-// Home (v6 — bottom-nav-and-dashboard). A dashboard: a featured top-performer
-// deck → a short top-decks list → a Play Now loadout. Top-level navigation is
-// the bottom tab bar (App.jsx), so Home has no footer/menu of its own.
+// Home (metallic-design-system). A compact metallic dashboard: a header stat
+// bar (Decks / Games / Top Deck) → the YOUR DECKS list (best first) → a New
+// Test Game loadout. Top-level navigation is the bottom tab bar (App.jsx), so
+// Home has no footer/menu of its own. The shared space backdrop shows through.
 export default function HomeScreen({onStartGame, onOpenDeckEdit, onOpenDeckDetail}) {
   const {settings, updateSettings} = useSettings();
   const {decks, games} = useDecks();
   const {width, height} = useWindowDimensions();
   const isLandscape = width > height;
+  const showExit = homeExitVisible(Platform.OS, isLandscape);
+  // Brand-frame geometry is measured (react-native-svg needs explicit sizes):
+  // the bar width positions the SVG; the title width sizes the frame so it hugs
+  // the title and the diagonals finish inset from the edges.
+  const [headerW, setHeaderW] = useState(0);
+  const [titleW, setTitleW] = useState(0);
 
   const loadout = settings.activeLoadout || {player1DeckId: null, player2DeckId: RANDOM_DECK_ID};
   const hasDecks = decks.length > 0;
 
   const deckOptions = useMemo(
-    () => decks.map((d) => ({key: d.id, label: d.name, aspectColor: accentForDeck(d)})),
+    () =>
+      decks.map((d) => ({
+        key: d.id,
+        label: d.name,
+        aspects: Array.isArray(d.aspects) ? d.aspects : [],
+        aspectColor: accentForDeck(d)
+      })),
     [decks]
   );
   const random = {key: KEY_RANDOM, label: "Random", special: true};
@@ -161,9 +161,10 @@ export default function HomeScreen({onStartGame, onOpenDeckEdit, onOpenDeckDetai
   const handlePlayerSelect = makeHandler("player1DeckId");
   const handleOpponentSelect = makeHandler("player2DeckId");
 
-  const stats = useMemo(() => globalStats(decks, games), [decks, games]);
+  const head = useMemo(() => homeHeaderModel(decks, games), [decks, games]);
   const ranking = useMemo(() => rankDecks(decks, games), [decks, games]);
-  const topDecks = ranking.rest.slice(0, MAX_TOP_DECKS);
+  const ordered = useMemo(() => [ranking.top, ...ranking.rest].filter(Boolean), [ranking]);
+  const shown = ordered.slice(0, MAX_HOME_DECKS);
 
   const testDeck = (deckId) => {
     updateSettings({activeLoadout: {player1DeckId: deckId, player2DeckId: loadout.player2DeckId || RANDOM_DECK_ID}});
@@ -172,211 +173,255 @@ export default function HomeScreen({onStartGame, onOpenDeckEdit, onOpenDeckDetai
   const openDeck = (id) => onOpenDeckDetail && onOpenDeckDetail(id);
   const newDeck = () => onOpenDeckEdit && onOpenDeckEdit(null);
 
-  const brand = <Text style={[styles.title, isLandscape && styles.titleLandscape]}>SWU PLAYTESTING</Text>;
-
-  const statStrip = (
-    <View style={styles.statStrip}>
-      {stats.gameCount === 0 ? (
-        <Text style={styles.statCta} numberOfLines={1}>Play a test game to start your stats</Text>
-      ) : (
-        <Text style={styles.statText} numberOfLines={1}>
-          <Text style={styles.statNum}>{stats.deckCount}</Text>
-          <Text style={styles.statLabel}>{stats.deckCount === 1 ? " deck" : " decks"}</Text>
-          <Text style={styles.statDot}>{" · "}</Text>
-          <Text style={styles.statNum}>{stats.gameCount}</Text>
-          <Text style={styles.statLabel}>{stats.gameCount === 1 ? " test game" : " test games"}</Text>
-        </Text>
-      )}
-    </View>
-  );
-
-  const featured = hasDecks && ranking.top ? (
-    <FeaturedDeck deck={ranking.top} games={games} qualifies={ranking.topQualifies} onTest={testDeck} onOpen={openDeck} />
-  ) : (
-    <Pressable
-      style={({pressed}) => [styles.emptyWrap, pressed && styles.pressed]}
-      onPress={newDeck}
-      accessibilityRole="button"
-      accessibilityLabel="Create your first deck"
+  // ── Metallic top app-bar: linked to the top edge, brand heading + compact
+  // single-line stats (Decks / Games / Top Deck). ──
+  const header = (
+    <LinearGradient
+      colors={METAL.surface}
+      start={{x: 0, y: 0}}
+      end={{x: 0, y: 1}}
+      style={[styles.headerBar, isLandscape && styles.headerBarCompact]}
     >
-      <LinearGradient colors={GRADIENTS.STEEL} start={{x: 0, y: 0}} end={{x: 0, y: 1}} style={styles.emptyBtn}>
-        <DeckIcon color="#e8e8ee" size={20} />
-        <Text style={styles.emptyText}>Create your first deck</Text>
-      </LinearGradient>
-    </Pressable>
+      <View
+        style={[styles.brandBlock, isLandscape && styles.brandBlockCompact]}
+        onLayout={(e) => setHeaderW(Math.round(e.nativeEvent.layout.width))}
+      >
+        {headerW > 0 && titleW > 0 ? (
+          <HeaderFrame
+            width={headerW}
+            titleW={titleW}
+            height={isLandscape ? 24 : 30}
+            diagW={isLandscape ? 16 : 20}
+            pad={isLandscape ? 7 : 9}
+          />
+        ) : null}
+        <Text
+          style={[styles.brand, isLandscape && styles.brandCompact]}
+          onLayout={(e) => setTitleW(Math.round(e.nativeEvent.layout.width))}
+        >
+          SWU PLAYTESTING
+        </Text>
+      </View>
+      <View style={styles.headerRow}>
+        <HeaderStat icon={<DeckIcon color={TEXT.onMetal.secondary} size={17} />} label="DECKS" style={styles.statSmall}>
+          <Text style={headerStatStyles.value}>{head.deckCount}</Text>
+        </HeaderStat>
+        <View style={styles.vdiv} />
+        <HeaderStat icon={<SabersIcon color={TEXT.onMetal.secondary} size={17} />} label="GAMES" style={styles.statSmall}>
+          <Text style={headerStatStyles.value}>{head.gameCount}</Text>
+        </HeaderStat>
+        <View style={styles.vdiv} />
+        <HeaderStat icon={<CrownIcon color={TEXT.onMetal.secondary} size={17} />} label="BEST DECK" style={styles.statWide}>
+          {head.topDeck ? (
+            <View style={styles.topRow}>
+              <Text style={styles.topName} numberOfLines={1}>{head.topDeck.name}</Text>
+              {head.topDeck.hasGames ? (
+                <RecordNumbers stats={head.topDeck.stats} surface="onMetal" size={12} style={styles.topRecord} />
+              ) : null}
+            </View>
+          ) : (
+            <Text style={styles.topName}>—</Text>
+          )}
+        </HeaderStat>
+      </View>
+    </LinearGradient>
   );
 
-  const topDecksSection = topDecks.length > 0 ? (
-    <View style={styles.topSection}>
-      <Text style={styles.sectionTitle}>TOP DECKS</Text>
-      {topDecks.map((d, i) => (
-        <DeckRow key={d.id} deck={d} games={games} rank={i + 2} onTest={testDeck} onOpen={openDeck} />
+  // ── YOUR DECKS (best first, capped) — or the empty-state CTA ──
+  const decksSection = hasDecks ? (
+    <View style={styles.section}>
+      <SectionLabel>TOP DECKS</SectionLabel>
+      {shown.map((d) => (
+        <HomeDeckCard key={d.id} deck={d} games={games} onTest={testDeck} onOpen={openDeck} />
       ))}
     </View>
-  ) : null;
-
-  const playNow = (
-    <View style={styles.playNow}>
-      <Text style={styles.sectionTitle}>PLAY NOW</Text>
-      <View style={styles.loadoutRow}>
-        <Dropdown
-          label="PLAYER"
-          value={playerValue}
-          options={sideOptions}
-          onSelect={handlePlayerSelect}
-          placeholder={hasDecks ? "Select a deck" : "Create a deck"}
-          enableAnimations={settings.enableAnimations}
-        />
-        <Text style={styles.versus}>vs</Text>
-        <Dropdown
-          label="OPPONENT"
-          value={opponentValue}
-          options={sideOptions}
-          onSelect={handleOpponentSelect}
-          placeholder="Random"
-          enableAnimations={settings.enableAnimations}
-        />
-      </View>
-      <MenuButton label="Play Test Game" variant="hero" icon={<PlayIcon color="#FFFFFF" size={22} />} onPress={onStartGame} />
+  ) : (
+    <View style={styles.section}>
+      <SectionLabel>YOUR DECKS</SectionLabel>
+      <PrimaryButton
+        label="Create your first deck"
+        icon={<DeckIcon color={TEXT.onMetal.primary} size={18} />}
+        onPress={newDeck}
+      />
+      <Text style={styles.emptyHint}>Register a deck to start logging playtests and tracking your top performer.</Text>
     </View>
   );
 
-  // ── Landscape: two columns — featured + top decks (scroll) left, Play Now right. ──
+  // ── New Test Game — Player & Opponent on SEPARATE rows (room for names) ──
+  const testSection = (
+    <View style={styles.section}>
+      <SectionLabel style={isLandscape ? styles.sectionLabelCompact : undefined}>NEW TEST GAME</SectionLabel>
+      <SelectRow
+        label="PLAYER"
+        value={playerValue}
+        options={sideOptions}
+        onSelect={handlePlayerSelect}
+        placeholder={hasDecks ? "Select a deck" : "Create a deck"}
+        enableAnimations={settings.enableAnimations}
+        compact={isLandscape}
+      />
+      <Text style={[styles.vs, isLandscape && styles.vsCompact]}>vs</Text>
+      <SelectRow
+        label="OPPONENT"
+        value={opponentValue}
+        options={sideOptions}
+        onSelect={handleOpponentSelect}
+        placeholder="Random"
+        enableAnimations={settings.enableAnimations}
+        compact={isLandscape}
+      />
+      <PrimaryButton
+        label="Play Test Game"
+        icon={<PlayIcon color={TEXT.onMetal.primary} size={20} />}
+        onPress={onStartGame}
+        style={[styles.playBtn, isLandscape && styles.playBtnCompact]}
+      />
+    </View>
+  );
+
+  const exitFooter = showExit ? (
+    <Pressable
+      onPress={handleExit}
+      style={({pressed}) => [styles.exitRow, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel="Exit the app"
+    >
+      <PowerIcon color="#e8938c" size={18} />
+      <Text style={styles.exitLabel}>Exit</Text>
+    </Pressable>
+  ) : null;
+
+  // ── Landscape: header full-width, then decks (scroll) | New Test Game ──
   if (isLandscape) {
     return (
-      <View style={styles.containerLandscape}>
+      <View style={styles.container}>
+        {header}
         <View style={styles.landscapeRow}>
           <View style={styles.landscapeColLeft}>
-            {brand}
-            {statStrip}
             <ScrollView style={styles.leftScroll} contentContainerStyle={styles.leftScrollContent}>
-              {featured}
-              {topDecksSection}
+              {decksSection}
             </ScrollView>
           </View>
-          <View style={styles.landscapeColRight}>{playNow}</View>
+          <View style={styles.landscapeColRight}>
+            {/* exitFooter is null in landscape (homeExitVisible) — no room above
+                the tab bar. */}
+            <ScrollView style={styles.rightScroll} contentContainerStyle={styles.rightScrollContent}>
+              {testSection}
+              {exitFooter}
+            </ScrollView>
+          </View>
         </View>
       </View>
     );
   }
 
-  // ── Portrait: one scrollable column. ──
+  // ── Portrait: fixed top bar, then one scrollable column ──
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      {brand}
-      {statStrip}
-      {featured}
-      {topDecksSection}
-      {playNow}
-    </ScrollView>
+    <View style={styles.container}>
+      {header}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {decksSection}
+        {testSection}
+        {exitFooter}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: "transparent"},
-  scrollContent: {paddingHorizontal: 20, paddingTop: 30, paddingBottom: 24},
-  containerLandscape: {flex: 1, backgroundColor: "transparent", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10},
-  landscapeRow: {flex: 1, flexDirection: "row", gap: 24},
-  landscapeColLeft: {flex: 1.25, minWidth: 0},
-  landscapeColRight: {flex: 1, maxWidth: 330, justifyContent: "center"},
+  scroll: {flex: 1},
+  scrollContent: {paddingHorizontal: 18, paddingTop: 16, paddingBottom: 24},
+  landscapeRow: {flex: 1, minHeight: 0, flexDirection: "row", gap: 20, paddingHorizontal: 18, paddingTop: 12},
+  landscapeColLeft: {flex: 1.3, minWidth: 0, minHeight: 0},
+  landscapeColRight: {flex: 1, maxWidth: 360, minHeight: 0},
   leftScroll: {flex: 1},
   leftScrollContent: {paddingBottom: 8},
+  rightScroll: {flex: 1},
+  rightScrollContent: {paddingBottom: 8},
 
-  title: {
-    color: "#FFF",
+  // ── Metallic top app-bar (linked to the top edge) ──
+  headerBar: {
+    paddingHorizontal: 16,
+    paddingTop: 0, // brand frame's diagonals run up to the very top edge
+    paddingBottom: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: METAL.bevelDark
+  },
+  headerBarCompact: {paddingTop: 0, paddingBottom: 5},
+  // Brand block: the title centered over a single engraved line that runs the
+  // full width of the bar and turns UP diagonally at both ends (＼___／). The
+  // block is full-bleed (cancels the 16px side padding) so the diagonal ends
+  // reach the bar edges; HeaderFrame draws the line behind the title.
+  brandBlock: {marginHorizontal: -16, height: 30, alignItems: "center", justifyContent: "center", marginBottom: 7},
+  brandBlockCompact: {height: 24, marginBottom: 5},
+  frameSvg: {position: "absolute", left: 0, top: 0, pointerEvents: "none"},
+  brand: {
     fontFamily: "FiraCode_700Bold",
-    fontSize: 21,
-    letterSpacing: 1.6,
-    textAlign: "center",
-    paddingTop: 2,
-    ...textShadow({color: "rgba(0,0,0,0.6)", offset: {width: 0, height: 2}, radius: 6})
+    fontSize: 15,
+    letterSpacing: 3.5,
+    color: TEXT.onMetal.primary,
+    textAlign: "center"
   },
-  titleLandscape: {fontSize: 18},
+  brandCompact: {fontSize: 12, letterSpacing: 2.5},
+  headerRow: {flexDirection: "row", alignItems: "flex-start"},
+  statSmall: {flex: 1},
+  statWide: {flex: 1.8, marginLeft: 2},
+  vdiv: {width: 1, alignSelf: "stretch", marginHorizontal: 10, backgroundColor: "rgba(0,0,0,0.16)"},
+  topRow: {flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0},
+  topName: {...TYPE.stat, fontSize: 14, color: TEXT.onMetal.primary, flexShrink: 1},
+  topRecord: {flexShrink: 0},
 
-  statStrip: {alignItems: "center", marginTop: 8, marginBottom: 16},
-  statText: {fontFamily: "FiraCode_400Regular", fontSize: 12.5, letterSpacing: 0.2},
-  statNum: {color: "#d7dae1", fontFamily: "FiraCode_700Bold"},
-  statLabel: {color: "#8b8f99"},
-  statDot: {color: "#55585f"},
-  statCta: {color: "#8b8f99", fontFamily: "FiraCode_400Regular", fontSize: 12.5},
+  // ── Sections ──
+  section: {marginBottom: 18},
+  sectionLabelCompact: {marginBottom: 5},
 
-  // ── Featured top-performer ──
-  featuredWrap: {marginBottom: 18},
-  featured: {borderRadius: 16, borderWidth: 1, borderColor: "#ffffff1f", padding: 15, borderBottomLeftRadius: 0, borderBottomRightRadius: 0},
-  featuredLabel: {color: "#d8b24a", fontFamily: "FiraCode_700Bold", fontSize: 10, letterSpacing: 2.5, marginBottom: 9},
-  featuredRow: {flexDirection: "row", alignItems: "center", gap: 12},
-  featuredDot: {width: 13, height: 13, borderRadius: 7, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)"},
-  featuredInfo: {flex: 1, minWidth: 0},
-  featuredName: {color: "#fff", fontFamily: "FiraCode_700Bold", fontSize: 18},
-  featuredArch: {color: "#9a9da6", fontFamily: "FiraCode_400Regular", fontSize: 11, marginTop: 2},
-  featuredStats: {alignItems: "flex-end"},
-  featuredPct: {fontFamily: "FiraCode_700Bold", fontSize: 26},
-  featuredNeeds: {color: "#9a9da6", fontFamily: "FiraCode_400Regular", fontSize: 10.5, fontStyle: "italic"},
-  featuredRecord: {color: "#c8ccd4", fontFamily: "FiraCode_400Regular", fontSize: 12, marginTop: 1},
-  featuredBar: {height: 5, borderRadius: 3, backgroundColor: "#2a2a30", marginTop: 12, overflow: "hidden"},
-  featuredBarFill: {height: "100%", borderRadius: 3},
-  featuredTest: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    minHeight: 44,
-    backgroundColor: "#242424",
-    borderWidth: 1,
-    borderColor: "#ffffff1f",
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16
-  },
-  featuredTestTxt: {color: "#e8e8ee", fontFamily: "FiraCode_700Bold", fontSize: 13, letterSpacing: 0.5},
-
-  // ── Top decks ──
-  topSection: {marginBottom: 18},
-  sectionTitle: {color: "#7e8290", fontFamily: "FiraCode_700Bold", fontSize: 11, letterSpacing: 2, marginBottom: 10, marginLeft: 2},
-
-  deckRow: {flexDirection: "row", alignItems: "stretch", gap: 8, marginBottom: 9},
-  deckMain: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderWidth: 1,
-    borderColor: "#ffffff12",
-    borderRadius: 13,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    minHeight: 58
-  },
-  deckRank: {color: "#7e8290", fontFamily: "FiraCode_700Bold", fontSize: 12, width: 20, textAlign: "center"},
-  deckDot: {width: 11, height: 11, borderRadius: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.35)"},
-  deckInfo: {flex: 1, minWidth: 0},
-  deckName: {color: "#fff", fontFamily: "FiraCode_700Bold", fontSize: 14},
-  deckArch: {color: "#83868f", fontFamily: "FiraCode_400Regular", fontSize: 10.5, marginTop: 2},
-  deckStats: {width: 64, alignItems: "flex-end"},
-  deckWl: {color: "#c8ccd4", fontFamily: "FiraCode_400Regular", fontSize: 11},
-  deckPct: {fontFamily: "FiraCode_700Bold", fontSize: 15, marginTop: 1},
-  deckNoGames: {color: "#6f727a", fontFamily: "FiraCode_400Regular", fontSize: 10.5, fontStyle: "italic"},
-  testBtn: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    minWidth: 66,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "#ffffff26",
-    backgroundColor: "#242424"
-  },
-  testTxt: {color: "#e8e8ee", fontFamily: "FiraCode_700Bold", fontSize: 12},
+  // ── Deck card ──
+  deckCard: {marginBottom: 9},
+  deckRow: {flexDirection: "row", alignItems: "center", paddingVertical: 9, paddingLeft: 14, paddingRight: 9, gap: 9},
+  deckBody: {flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0},
   pressed: {opacity: 0.7},
+  deckInfo: {flex: 1, minWidth: 0},
+  deckName: {...TYPE.title, fontSize: 15, color: TEXT.onMetal.primary},
+  deckArch: {...TYPE.caption, color: TEXT.onMetal.muted, marginTop: 1},
+  deckRight: {alignItems: "flex-end", gap: 3, minWidth: 52},
+  noGames: {...TYPE.caption, color: TEXT.onMetal.muted, fontStyle: "italic"},
+  testPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 38,
+    minWidth: 66,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.sm,
+    backgroundColor: "#23262c",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.32)"
+  },
+  testTxt: {color: "#f1f2f4", ...TYPE.label, fontSize: 11, letterSpacing: 1.5},
 
-  // ── Empty (no decks) ──
-  emptyWrap: {borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: "#ffffff30", marginBottom: 18},
-  emptyBtn: {flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 11, minHeight: 66, paddingHorizontal: 16},
-  emptyText: {color: "#fff", fontFamily: "FiraCode_700Bold", fontSize: 14.5, letterSpacing: 0.3},
+  // ── Empty state ──
+  emptyHint: {...TYPE.caption, color: TEXT.onSpace.muted, marginTop: 10, textAlign: "center", lineHeight: 16},
 
-  // ── Play Now ──
-  playNow: {borderWidth: 1, borderColor: "#ffffff14", borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", padding: 13},
-  loadoutRow: {flexDirection: "row", alignItems: "flex-end", gap: 9, marginBottom: 12},
-  versus: {color: "#777", fontFamily: "FiraCode_700Bold", fontSize: 13, paddingBottom: 13}
+  // ── New Test Game ──
+  vs: {textAlign: "center", ...TYPE.caption, color: TEXT.onSpace.muted, marginVertical: 8, letterSpacing: 1},
+  vsCompact: {marginVertical: 3},
+  playBtn: {marginTop: 16},
+  playBtnCompact: {marginTop: 10},
+
+  // ── Exit (Home only; Android/web) ──
+  exitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    minHeight: 48,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#7a3a3a",
+    borderRadius: RADIUS.md,
+    backgroundColor: "#2c1618"
+  },
+  exitLabel: {color: "#e8938c", fontFamily: "FiraCode_700Bold", fontSize: 14, letterSpacing: 1}
 });

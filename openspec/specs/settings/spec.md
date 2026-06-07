@@ -261,19 +261,16 @@ The sanitize layer SHALL validate these on read (a default-deck field rejects `"
 - **THEN** the in-memory `defaultDeckId` carries the legacy value and subsequent writes emit only `defaultDeckId`
 
 ### Requirement: Animated background is a persisted, toggleable setting
-The persisted settings SHALL include a boolean **`animatedBackground`** (default **`true`**). The Settings screen SHALL expose an **"Animated background"** toggle (in the Animations section) that controls whether the shared space backdrop animates. The sanitize layer SHALL coerce the value to a boolean on read and default missing/invalid values to `true`, so existing persisted blobs (which predate this key) read as enabled. Changing the toggle SHALL persist immediately, like the other settings.
+The persisted settings SHALL include a boolean **`animatedBackground`** (default **`true`**), coerced to a boolean on read with missing/invalid values defaulting to `true` (so pre-existing blobs read as enabled). The Settings screen SHALL NOT present a SEPARATE "Animated background" toggle; instead the single **"Enable animations"** toggle (in the Animations section) governs BOTH `enableAnimations` and `animatedBackground` together — toggling it writes the same value to both, because to the user they are the same thing. The backdrop's motion remains the combination of `animatedBackground` AND `enableAnimations` (it animates only when both are on); because the single toggle keeps them in sync, turning animations off makes the backdrop static.
 
-The backdrop's motion is the combination of this toggle AND the existing global `enableAnimations` preference: it animates only when **both** are on; otherwise the backdrop is shown statically (see the `space-background` capability).
-
-#### Scenario: Default is on
-- **GIVEN** no settings have been saved
-- **WHEN** the app launches
-- **THEN** `animatedBackground` is `true` and the backdrop animates
-
-#### Scenario: Toggle persists across launches
-- **GIVEN** the user turns "Animated background" off
-- **WHEN** the app is closed and reopened
-- **THEN** the toggle is still off and the backdrop is static
+#### Scenario: One toggle governs both UI animations and the background
+- **GIVEN** the Settings Animations section
+- **WHEN** the Settings screen renders
+- **THEN** exactly one toggle ("Enable animations") is shown — there is NO separate "Animated background" toggle
+- **WHEN** the user turns it off
+- **THEN** both `enableAnimations` and `animatedBackground` are persisted as `false` and the backdrop is static
+- **WHEN** the user turns it on
+- **THEN** both are persisted as `true` and the backdrop animates
 
 #### Scenario: Legacy settings read as enabled
 - **GIVEN** a persisted settings blob saved before this change (no `animatedBackground` key)
@@ -284,18 +281,3 @@ The backdrop's motion is the combination of this toggle AND the existing global 
 - **GIVEN** a persisted `animatedBackground` that is not a boolean (e.g. a string)
 - **WHEN** settings hydrate
 - **THEN** it is coerced to a boolean (defaulting to `true` when not clearly false)
-
-### Requirement: Settings provides an Exit control
-The Settings screen SHALL provide an **Exit** control (a row/button) on every platform **except iOS**, where it SHALL be omitted (Apple HIG forbids programmatic termination). Tapping it SHALL close the app via the platform-appropriate mechanism — Android `BackHandler.exitApp()`, web `window.close()` (which may no-op for tabs the user opened themselves — a browser constraint, not a bug). This relocates the former Home Exit control.
-
-#### Scenario: Exit control on Android/web
-- **GIVEN** the app runs on Android or web
-- **WHEN** the Settings screen is rendered
-- **THEN** an Exit control is visible
-- **WHEN** the user taps it
-- **THEN** the app attempts to close via the platform mechanism
-
-#### Scenario: No Exit on iOS
-- **GIVEN** the app runs on iOS
-- **WHEN** the Settings screen is rendered
-- **THEN** no Exit control is rendered

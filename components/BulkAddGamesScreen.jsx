@@ -17,6 +17,7 @@ import {useDecks} from "../context/DecksContext";
 import {useSettings} from "../context/SettingsContext";
 import {DECK_NAME_MAX, EVENT_TAG_MAX, GAME_COMMENT_MAX, RANDOM_DECK_ID} from "../constants/decks";
 import {eventsInGames} from "../context/deckStats";
+import {GOLD} from "../constants/theme";
 import {textShadow} from "../utils/textShadow";
 
 // Bulk game-import form (v3 — the headline backfill feature). Pick a
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
     borderColor: "#34343c",
     borderStyle: "dashed"
   },
-  modalRowSelected: {backgroundColor: "#26303a", borderColor: "#4B79A1"},
+  modalRowSelected: {backgroundColor: "rgba(232,196,90,0.14)", borderColor: GOLD},
   modalRowDot: {
     width: 12,
     height: 12,
@@ -660,7 +661,7 @@ const styles = StyleSheet.create({
   },
   modalRowText: {flex: 1, color: "#FFF", fontFamily: "FiraCode_700Bold", fontSize: 14, letterSpacing: 0.5},
   modalRowTextSpecial: {fontFamily: "FiraCode_400Regular", color: "#CCC"},
-  modalRowCheck: {color: "#7fb4e0", fontFamily: "FiraCode_700Bold", fontSize: 15},
+  modalRowCheck: {color: GOLD, fontFamily: "FiraCode_700Bold", fontSize: 15},
   createBlock: {marginTop: 16},
   createLabel: {
     color: "#888",
@@ -669,9 +670,14 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 8
   },
-  createRow: {flexDirection: "row", alignItems: "center", gap: 8},
+  createRow: {flexDirection: "row", alignItems: "stretch", gap: 8},
   createInput: {
     flex: 1,
+    // `minWidth: 0` lets the flexed input shrink below its intrinsic content
+    // width on react-native-web; without it the input grows and shoves the
+    // Create button off the row's right edge (the misalignment bug).
+    minWidth: 0,
+    minHeight: 40,
     color: "#FFF",
     fontFamily: "FiraCode_400Regular",
     fontSize: 14,
@@ -684,15 +690,16 @@ const styles = StyleSheet.create({
   },
   createInputError: {borderColor: "#ff6b6b"},
   createBtn: {
-    backgroundColor: "#4B79A1",
+    flexShrink: 0,
+    backgroundColor: GOLD,
     borderRadius: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     minHeight: 40,
     alignItems: "center",
     justifyContent: "center"
   },
   createBtnDisabled: {opacity: 0.45},
-  createBtnText: {color: "#FFF", fontFamily: "FiraCode_700Bold", fontSize: 13, letterSpacing: 0.5},
+  createBtnText: {color: "#241a04", fontFamily: "FiraCode_700Bold", fontSize: 13, letterSpacing: 0.5},
   createError: {color: "#ff6b6b", fontFamily: "FiraCode_400Regular", fontSize: 11, letterSpacing: 0.3, marginTop: 6},
   modalCloseBtn: {
     marginTop: 16,

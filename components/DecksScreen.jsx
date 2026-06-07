@@ -2,8 +2,10 @@ import React, {useEffect, useMemo, useState} from "react";
 import {BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
 import BackIcon from "../icons/BackIcon";
 import DeckCard from "./DeckCard";
+import PrimaryButton from "./ui/PrimaryButton";
 import {useDecks} from "../context/DecksContext";
-import {statsForDeck, streakForDeck} from "../context/deckStats";
+import {statsForDeck, streakForDeck, recentForm} from "../context/deckStats";
+import {GOLD, TEXT} from "../constants/theme";
 import {
   EMPTY_FILTERS,
   SORT_NAME,
@@ -55,7 +57,8 @@ export default function DecksScreen({onBack, onOpenDeckDetail, onOpenDeckEdit}) 
     return filterDecks(decks, games, filters).map((d) => ({
       deck: d,
       stats: statsForDeck(d.id, games),
-      streak: streakForDeck(d.id, games)
+      streak: streakForDeck(d.id, games),
+      points: recentForm(d.id, games)
     }));
   }, [decks, games, filters]);
 
@@ -98,16 +101,13 @@ export default function DecksScreen({onBack, onOpenDeckDetail, onOpenDeckEdit}) 
         <View style={styles.emptyBody}>
           <Text style={styles.emptyTitle}>No decks yet</Text>
           <Text style={styles.emptySubtitle}>
-            Add your first deck to start tracking matchups and win rates.
+            Register your first deck to start logging playtests and tracking matchups.
           </Text>
-          <Pressable
+          <PrimaryButton
+            label="Create your first deck"
             onPress={() => onOpenDeckEdit(null)}
-            style={({pressed}) => [styles.emptyButton, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Create your first deck"
-          >
-            <Text style={styles.emptyButtonLabel}>Create your first deck</Text>
-          </Pressable>
+            style={styles.emptyButton}
+          />
         </View>
       ) : (
         <>
@@ -257,12 +257,13 @@ export default function DecksScreen({onBack, onOpenDeckDetail, onOpenDeckEdit}) 
                 </Pressable>
               </View>
             ) : (
-              rows.map(({deck, stats, streak}) => (
+              rows.map(({deck, stats, streak, points}) => (
                 <DeckCard
                   key={deck.id}
                   deck={deck}
                   stats={stats}
                   streak={streak}
+                  points={points}
                   onPress={() => onOpenDeckDetail(deck.id)}
                 />
               ))
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
   pressed: {opacity: 0.7},
   headerTitle: {flex: 1, color: "#FFF", fontFamily: "FiraCode_700Bold", fontSize: 18, letterSpacing: 1.4},
   newBtn: {minHeight: 44, paddingHorizontal: 10, justifyContent: "center"},
-  newLabel: {color: "#FFF", fontFamily: "FiraCode_700Bold", fontSize: 13, letterSpacing: 1.4},
+  newLabel: {color: GOLD, fontFamily: "FiraCode_700Bold", fontSize: 13, letterSpacing: 1.4},
 
   // Filters toggle bar (row: toggle + clear as siblings)
   filterBar: {
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   clearBtn: {paddingVertical: 8, paddingLeft: 12},
   filterChevron: {color: "#888", fontSize: 12, width: 14},
   filterBarLabel: {color: "#AAA", fontFamily: "FiraCode_700Bold", fontSize: 12, letterSpacing: 2.5},
-  filterCountBadge: {minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: "#caa23a", alignItems: "center", justifyContent: "center"},
+  filterCountBadge: {minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: GOLD, alignItems: "center", justifyContent: "center"},
   filterCountText: {color: "#241a04", fontFamily: "FiraCode_700Bold", fontSize: 11},
   clearLabel: {color: "#888", fontFamily: "FiraCode_700Bold", fontSize: 11, letterSpacing: 1.5},
 
@@ -344,15 +345,15 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     minHeight: 34
   },
-  chipSelected: {backgroundColor: "#2a2a2e", borderColor: "#FFF"},
+  chipSelected: {backgroundColor: "rgba(232,196,90,0.16)", borderColor: GOLD},
   chipDot: {width: 9, height: 9, borderRadius: 5, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)"},
   chipLabel: {color: "#BBB", fontFamily: "FiraCode_400Regular", fontSize: 12, letterSpacing: 0.3},
   chipLabelSelected: {color: "#FFF", fontFamily: "FiraCode_700Bold"},
   segmented: {flexDirection: "row", backgroundColor: "#16161a", borderRadius: 10, borderWidth: 1, borderColor: "#2a2a2e", overflow: "hidden"},
   segment: {flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 9, minHeight: 40},
-  segmentActive: {backgroundColor: "#2f2f36"},
+  segmentActive: {backgroundColor: "rgba(232,196,90,0.16)"},
   segmentLabel: {color: "#AAA", fontFamily: "FiraCode_700Bold", fontSize: 12, letterSpacing: 0.6},
-  segmentLabelActive: {color: "#FFF"},
+  segmentLabelActive: {color: GOLD},
 
   // No-match state
   noMatch: {alignItems: "center", justifyContent: "center", paddingVertical: 48, gap: 14},
@@ -362,8 +363,7 @@ const styles = StyleSheet.create({
 
   // Empty (no decks at all)
   emptyBody: {flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 12},
-  emptyTitle: {color: "#FFF", fontFamily: "FiraCode_700Bold", fontSize: 18, letterSpacing: 1},
-  emptySubtitle: {color: "#888", fontFamily: "FiraCode_400Regular", fontSize: 13, letterSpacing: 0.5, textAlign: "center", lineHeight: 20, marginBottom: 8},
-  emptyButton: {backgroundColor: "#FFF", paddingHorizontal: 22, paddingVertical: 13, borderRadius: 999, minHeight: 48, alignItems: "center", justifyContent: "center"},
-  emptyButtonLabel: {color: "#000", fontFamily: "FiraCode_700Bold", fontSize: 14, letterSpacing: 1}
+  emptyTitle: {color: TEXT.onSpace.primary, fontFamily: "FiraCode_700Bold", fontSize: 18, letterSpacing: 1},
+  emptySubtitle: {color: TEXT.onSpace.muted, fontFamily: "FiraCode_400Regular", fontSize: 13, letterSpacing: 0.5, textAlign: "center", lineHeight: 20, marginBottom: 8},
+  emptyButton: {alignSelf: "stretch", marginTop: 4}
 });

@@ -1,6 +1,7 @@
 {
-  "name": "swu-life-counter",
+  "name": "swu-playtesting",
   "version": "1.0.0",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "index.js",
   "type": "module",
   "scripts": {

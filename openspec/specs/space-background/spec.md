@@ -19,23 +19,23 @@ The app SHALL render a single shared space backdrop — a deep-space gradient wi
 - **THEN** the backdrop does not flash, reset, or visibly re-seed (it is the same persistent layer)
 
 ### Requirement: Background motion is gated by a Settings toggle and reduce-motion
-The starfield SHALL animate (a slow parallax drift, with a subtle per-layer opacity breath) only when the **Animated background** setting is on **and** the global **Enable animations** setting is on. In any other case the identical starfield SHALL render **statically** (stars at rest, no running timers) — the backdrop is never hidden, only stilled. Toggling motion off SHALL NOT cause a layout shift.
+The starfield SHALL animate (a slow parallax drift, with a subtle per-layer opacity breath) only when the persisted **`animatedBackground`** is on **and** the global **`enableAnimations`** is on. These are no longer two separate Settings toggles — a **single "Enable animations" toggle** now governs both (it writes the same value to each), so the starfield animates exactly when "Enable animations" is on. In any other case the identical starfield SHALL render **statically** (stars at rest, no running timers) — the backdrop is never hidden, only stilled. Toggling it off SHALL NOT cause a layout shift.
 
 #### Scenario: Animation on by default
 - **GIVEN** a fresh install (no settings saved)
 - **WHEN** any screen renders
 - **THEN** the starfield is animated (drifting)
 
-#### Scenario: Disabling the animated-background toggle stills the stars
+#### Scenario: Turning Enable animations off stills the stars
 - **GIVEN** animations are enabled
-- **WHEN** the user turns the "Animated background" toggle off in Settings
+- **WHEN** the user turns the single **"Enable animations"** toggle off in Settings
 - **THEN** the same starfield is shown but no longer moves
 - **AND** no layout shift occurs
 
-#### Scenario: Global reduce-motion also stills the background
-- **GIVEN** the "Animated background" toggle is on
-- **WHEN** the user turns the global "Enable animations" setting off
-- **THEN** the starfield is rendered statically (reduce-motion wins)
+#### Scenario: A legacy animatedBackground=false also stills the background
+- **GIVEN** a persisted `animatedBackground` of `false` (e.g. saved before the two toggles were merged) with `enableAnimations` still on
+- **WHEN** a screen renders
+- **THEN** the starfield is rendered statically (motion requires BOTH `animatedBackground` and `enableAnimations`)
 
 ### Requirement: In-game team-colored curved lines overlay the space, only during a game
 During a game, each side's **team-colored curved lines** SHALL be rendered as a **transparent overlay on top of** the shared animated space, using that side's selected team color and the existing per-half orientation (the opponent half mirrored 180°). These curved lines SHALL appear **only** in the in-game life counter — they SHALL NOT appear on any other screen. The lines SHALL adapt to portrait and landscape using the orientation-appropriate overlay.
